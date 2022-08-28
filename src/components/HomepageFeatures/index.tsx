@@ -34,7 +34,19 @@ const FeatureList: FeatureItem[] = [
   },
   {
     title: "Contact Me",
-    description: <>Drop a message to @mateoguzmana on Twitter.</>,
+    description: (
+      <>
+        Drop a message on my{" "}
+        <a
+          target="_blank"
+          rel="noopener noreferrer"
+          href="https://twitter.com/MateoGuzmanA"
+        >
+          Twitter
+        </a>
+        .
+      </>
+    ),
   },
 ];
 
