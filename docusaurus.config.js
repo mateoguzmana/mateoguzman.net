@@ -58,10 +58,10 @@ const config = {
     ({
       navbar: {
         title: 'Mateo Guzmán',
-        logo: {
-          alt: 'My Site Logo',
-          src: 'img/logo.png',
-        },
+        // logo: {
+        //   alt: 'My Site Logo',
+        //   src: 'img/myself.jpeg',
+        // },
         items: [
           {
             type: 'doc',
