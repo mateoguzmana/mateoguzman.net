@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkmateoguzman_net=self.webpackChunkmateoguzman_net||[]).push([[4680],{7383:a=>{a.exports=JSON.parse('{"label":"Async Storage","permalink":"/mateoguzman.net/blog/tags/async-storage","allTagsPath":"/mateoguzman.net/blog/tags","count":1}')}}]);

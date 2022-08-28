@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkmateoguzman_net=self.webpackChunkmateoguzman_net||[]).push([[648],{6826:a=>{a.exports=JSON.parse('{"label":"back-end","permalink":"/mateoguzman.net/blog/tags/back-end","allTagsPath":"/mateoguzman.net/blog/tags","count":1}')}}]);

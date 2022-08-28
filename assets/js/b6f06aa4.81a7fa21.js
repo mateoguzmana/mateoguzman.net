@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkmateoguzman_net=self.webpackChunkmateoguzman_net||[]).push([[6917],{8800:e=>{e.exports=JSON.parse('{"label":"react-query","permalink":"/blog/tags/react-query","allTagsPath":"/blog/tags","count":1}')}}]);
