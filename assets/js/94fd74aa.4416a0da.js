@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkmateoguzman_net=self.webpackChunkmateoguzman_net||[]).push([[2729],{5835:e=>{e.exports=JSON.parse('{"label":"bitrise","permalink":"/mateoguzman.net/blog/tags/bitrise","allTagsPath":"/mateoguzman.net/blog/tags","count":1}')}}]);

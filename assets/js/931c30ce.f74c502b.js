@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkmateoguzman_net=self.webpackChunkmateoguzman_net||[]).push([[9153],{6796:e=>{e.exports=JSON.parse('{"label":"typescript","permalink":"/mateoguzman.net/blog/tags/typescript","allTagsPath":"/mateoguzman.net/blog/tags","count":1}')}}]);

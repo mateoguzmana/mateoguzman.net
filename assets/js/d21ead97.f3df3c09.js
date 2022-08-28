@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkmateoguzman_net=self.webpackChunkmateoguzman_net||[]).push([[7316],{7896:e=>{e.exports=JSON.parse('{"permalink":"/blog/tags/bitrise","page":1,"postsPerPage":10,"totalPages":1,"totalCount":1,"blogDescription":"Blog","blogTitle":"Blog"}')}}]);

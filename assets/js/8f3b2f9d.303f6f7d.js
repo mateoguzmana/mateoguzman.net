@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkmateoguzman_net=self.webpackChunkmateoguzman_net||[]).push([[3234],{4666:a=>{a.exports=JSON.parse('{"label":"optimization","permalink":"/blog/tags/optimization","allTagsPath":"/blog/tags","count":1}')}}]);

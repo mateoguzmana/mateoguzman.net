@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkmateoguzman_net=self.webpackChunkmateoguzman_net||[]).push([[8955],{1497:e=>{e.exports=JSON.parse('{"permalink":"/mateoguzman.net/blog/tags/react-native","page":1,"postsPerPage":10,"totalPages":1,"totalCount":1,"blogDescription":"Blog","blogTitle":"Blog"}')}}]);
