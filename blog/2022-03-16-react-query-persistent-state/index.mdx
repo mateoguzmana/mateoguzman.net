@@ -1,0 +1,150 @@
+---
+slug: persistent-state-manangement-with-react-query
+title: Persistent state management using Async Storage + React Query for React Native
+authors: [mateo]
+tags: [react-query, persistent, Async Storage, React Native]
+---
+
+![Banner](./img/banner.png)
+
+If you are here, like me, you were searching for simple but nice solutions for state management for a small React Native application.
+
+You may have considered using Redux or maybe Context. Well, those options work too but depending on your needs, it can get too robust or it won’t handle all the cases you need.
+
+That’s why I experimented using Async Storage & React Query. It gives me persistence since I can close my app and the state will remain in the Async Storage, and also it will work as offline storage if that is something you need too.
+
+Let’s start with the basics. What is **Async Storage**?
+
+“AsyncStorage is an unencrypted, asynchronous, persistent, key-value storage system that is global to the app. It should be used instead of LocalStorage.” (https://reactnative.dev/docs/asyncstorage)
+
+### What is React Query?
+
+“Fetch, cache and update data in your React and React Native applications all without touching any “global state” (https://react-query.tanstack.com/)
+
+React Query allows us to cache our data in a very simple way.
+
+### Why this combination?
+
+I wanted to keep the state of my applications persistent across different screens but I didn’t want to pass the state of the screens with props.
+
+Also, I wanted to keep the information I had even after the user closed the app. So when the user opens it again, the information is there.
+
+Other benefits?
+
+Offline support. With this solution, you can also cache data and use it offline
+
+### Implementation
+
+The application I built for this example, searches for books using OpenLibrary API, and then we have the ability to save these books in a wishlist or a reading group.
+
+I won’t focus on the full implementation since you can find that in my repository. I want to explain here the logic for React Query + Async Storage.
+
+Firstly, I created a service file called `list.service.ts` where I will put the get and the update logic.
+
+We have a function, `useGetList` which will retrieve the items of the list saved on the local storage. At the same time, it will use the `listKey` to store this information in the cache using React Query. We use the same key for Async Storage and React Query to have the same reference.
+
+```javascript
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useMutation, useQuery, useQueryClient } from 'react-query'
+
+export enum List {
+  Wishlist = '@wishlist',
+  ReadingGroups = '@readingGroups'
+}
+
+export const useGetList = (listKey: List) => {
+  return useQuery<string[] | null, Error>(
+    listKey,
+    async () => {
+      const result: string | null = await AsyncStorage.getItem(listKey)
+
+      return result ? JSON.parse(result) : []
+    }
+  )
+}
+```
+
+After this, we create a function called `useUpdateList` which will be the one in charge of updating the list in both local storage and cache.
+
+Again, we use the `listKey` to make reference to the list.
+
+```javascript
+/**
+* Article: https://mateoguzmana.medium.com/persistent-state-management-using-async-storage-react-query-for-simple-react-native-apps-9206db073f4a
+*/
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useMutation, useQuery, useQueryClient } from 'react-query'
+import { getUpdatedList } from '../utils/list.util'
+
+export enum List {
+  Wishlist = '@wishlist',
+  ReadingGroups = '@readingGroups'
+}
+
+export const useGetList = (listKey: List) => {
+  return useQuery<string[] | null, Error>(
+    listKey,
+    async () => {
+      const result: string | null = await AsyncStorage.getItem(listKey)
+
+      return result ? JSON.parse(result) : []
+    }
+  )
+}
+
+export const useUpdatelist = (listKey: List) => {
+  const queryClient = useQueryClient()
+
+  return useMutation(
+    listKey,
+    async (itemId: string) => {
+      const result: string | null = await AsyncStorage.getItem(listKey)
+
+      const currentList = result ? JSON.parse(result) : []
+      const newList = getUpdatedList(currentList, itemId)
+
+      await AsyncStorage.setItem(listKey, JSON.stringify(newList))
+
+      return newList
+    },
+    {
+      onSuccess: () => queryClient.invalidateQueries(listKey),
+    }
+  )
+}
+```
+
+It is important to notice that in line 37, on `onSuccess` we call the `queryClient` and then we invalidate the queries. What it does is invalidate the queries in all the places where you are using the queries for the specific list. That’s why it’s important to keep a consistent reference with the `listKey`.
+
+Example of this:
+
+Let’s say we have Screen A and Screen B. On screen B we press a button to save a book to the wishlist. We want Screen A to reflect these changes too.
+
+### Getting initial and updated list
+
+On screen A, we can simply do this:
+
+```javascript
+const { data: getWishlistData } = useGetList(List.Wishlist);
+```
+
+This is basically getting the wishlist, using the `useGetList` query. Once we invalidate this query, it will automatically fetch again this information, keeping an updated state of this list. Then the changes are reflected in both Screen A and B (because the query is used in both).
+
+### Updating lists
+
+We can use `useUpdateList` to update a list from a component by simply doing:
+
+```javascript
+const updateWishlist = useUpdatelist(List.Wishlist);
+const onPressWishlistButton = () => updateWishlist.mutate(itemId);
+```
+
+This will save the data in both local storage and cache and then the queries listening to this `listKey` will be fetched again automatically without any extra effort.
+
+...
+
+The explanation of the full example is a bit difficult, I might have missed some things during the writing so that is why I suggest you go to the [repository](https://github.com/mateoguzmana/open-library-react-native-example) and read the full code and also look at the examples, it will make it easier to understand.
+
+Please also notice this was experimentation and in my opinion, this works very nicely for small projects. If you are looking into complex state management I’d suggest another option like Redux.
+
+Please check out the [example](https://github.com/mateoguzmana/open-library-react-native-example) app.
