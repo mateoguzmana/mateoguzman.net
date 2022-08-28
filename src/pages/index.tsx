@@ -13,7 +13,7 @@ function HomepageHeader() {
     <header className={clsx("hero hero--primary", styles.heroBanner)}>
       <div className="container">
         <img
-          src="/img/myself.jpeg"
+          src="https://github.com/mateoguzmana.png"
           style={{ width: "280px", borderRadius: "50%" }}
         />
         <h1 className="hero__title">{siteConfig.title}</h1>
