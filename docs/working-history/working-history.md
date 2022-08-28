@@ -3,6 +3,10 @@ slug: working-history
 title: Working History
 ---
 
+import LYOS from './img/lyos.jpeg';
+import KrampApp from './img/krampapp.webp';
+import KrampApp2 from './img/krampapp2.webp';
+
 This is the list of companies for which I have worked for in the last couple of years.
 
 ## Springboard
@@ -35,6 +39,10 @@ Providing guidance to students from the University of South Florida, University 
 
   Technologies: React Native, TypeScript, Apollo Client, GraphQL, Mapbox and AWS services (Amplify, AppSync & Cognito).
 
+<div style={{ marginLeft: "30px" }}>
+  <img src={LYOS} alt="Kramp App" width="450" />
+</div>
+
 ## Kramp Hub
 
 **Full-time · Utrecht, Netherlands · 3 yrs**
@@ -61,6 +69,11 @@ Providing guidance to students from the University of South Florida, University 
   - Removing almost 100% of an old rest service to use fully GraphQL.
   - I managed to reduce the build times of the CI/CD: Find an article I wrote about it [here](../blog/optimizing-bitrise-build-times/).
 
+  <div style={{ marginLeft: "30px", marginTop: "10px" }}>
+    <img src={KrampApp} alt="Kramp App" width="250" />
+    <img src={KrampApp2} alt="Kramp App" width="250" />
+  </div>
+
 - **Front-end Engineer (Web)**
 
   May 2019 - Oct 2020 · 1 yr 6 mos
@@ -83,6 +96,8 @@ Technologies:
 - Web Applications: React.js, GraphQL, Apollo, Jest, Sass, Webpack and HTML5.
 - Other tools: Git, VSTS.
 
+![Arrive Logistics](./img/arrive-logistics.jpeg)
+
 ## Dvdendo
 
 **Mobile Engineer Consultant · Contract · Remote · 7 mos**
@@ -103,6 +118,8 @@ Main responsabilities:
 - Refactoring old services.
 - Giving ideas for new technology updates.
 
+![Dvdendo](./img/dvdendo.jpeg)
+
 ## Integ.ro
 
 **Mobile & Web Engineer · Full-time · Medellín, Colombia · 1 yr 5 mos**
@@ -112,7 +129,7 @@ Apr 2017 - Aug 2018
 Working on web and hybrid mobile apps. I worked on two projects, one for the healthcare sector and another for the investment sector.
 
 - Sicor: Implementing some features for the web application for the Healthcare sector.
-- Dvdendo: Development of the mobile application (Android and iOS) for the investment sector.
+- [Dvdendo](#dvdendo): Development of the mobile application (Android and iOS) for the investment sector.
 
 Web App: React, Node.js, Sass.
 
@@ -153,7 +170,7 @@ Milestones:
 
 May 2015 - Apr 2017
 
-Full-Stack Software Engineer, development real-time connection projects. Projects for production, marketing and law companies. Applications highly focused on front-end and plentiful UX.
+Full-Stack Software Engineer at [Web Evolution](https://www.webevolution.com.co), development real-time connection projects. Projects for production, marketing and law companies. Applications highly focused on front-end and plentiful UX.
 
 Front-end and back-end integration using mostly JavaScript technologies.
 
