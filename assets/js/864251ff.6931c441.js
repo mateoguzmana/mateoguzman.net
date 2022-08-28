@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkmateoguzman_net=self.webpackChunkmateoguzman_net||[]).push([[1132],{3608:a=>{a.exports=JSON.parse('{"label":"travelling","permalink":"/blog/tags/travelling","allTagsPath":"/blog/tags","count":1}')}}]);
