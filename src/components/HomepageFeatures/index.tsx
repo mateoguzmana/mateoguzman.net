@@ -16,7 +16,7 @@ const FeatureList: FeatureItem[] = [
         <a
           target="_blank"
           rel="noopener noreferrer"
-          href="https://github.com/Messiahhh/blog"
+          href="https://github.com/mateoguzmana"
         >
           GitHub
         </a>
