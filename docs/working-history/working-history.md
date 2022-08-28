@@ -67,7 +67,7 @@ Providing guidance to students from the University of South Florida, University 
 
   - Successfully upgraded the React Native version of the app multiple times.
   - Removing almost 100% of an old rest service to use fully GraphQL.
-  - I managed to reduce the build times of the CI/CD: Find an article I wrote about it [here](blog/optimizing-bitrise-build-times/).
+  - I managed to reduce the build times of the CI/CD: Find an article I wrote about it [here](/blog/optimizing-bitrise-build-times/).
 
   <div style={{ marginLeft: "30px", marginTop: "10px" }}>
     <img src={KrampApp} alt="Kramp App" width="250" />
