@@ -129,3 +129,42 @@ Main responsabilities:
 - Writing new end-to-end tests with Detox for Dvdendo.
 - Building new features for the Sicore web application.
 - Integrating some services in the Sicore backend.
+
+## Servicio Nacional de Aprendizaje (SENA)
+
+**Teacher · Part-time · Medellín, Colombia · 1 yr 1 mos**
+
+Mar 2017 - Mar 2018
+
+I was in charge of teaching all about the software development process (mostly focused on web applications) teaching from scratch JavaScript, HTML, CSS and algorithms.
+
+Main responsabilites:
+
+- Teaching JavaScript basics.
+- I taught them how to build a very basic game with JavaScript using plain HTML, CSS & JS.
+
+Milestones:
+
+- I introduced my students to LinkedIn and I taught them how to use the platform and how to build a good profile in order to find Software Engineering jobs.
+
+## Web Evolution
+
+**Full-Stack Engineer · Full-time · Medellín, Colombia · 2 yrs**
+
+May 2015 - Apr 2017
+
+Full-Stack Software Engineer, development real-time connection projects. Projects for production, marketing and law companies. Applications highly focused on front-end and plentiful UX.
+
+Front-end and back-end integration using mostly JavaScript technologies.
+
+Main responsabilities:
+
+- Building user Interfaces using Angular v1.x and Angular v2.
+- Creating back-end services using Node.js (Express Framework) with MongoDB. Also, a lot of small projects using PHP (Yii Framework) with MySQL.
+- Integrating client side and server side through RESTful APIs.
+
+Technologies: Angular v1/v2, Node.js, Express, MongoDB, MySQL, Nodemon, NPM, Git, Gulp, Bootstrap v3/v4, jQuery, Mocha, TypeScript and WebRTC.
+
+Milestones:
+
+- This was my first software engineering job, and I managed to build full-stack applications and learnt a lot of technologies building projects for very small local companies in Medellín, Colombia.
