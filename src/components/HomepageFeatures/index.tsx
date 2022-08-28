@@ -12,7 +12,15 @@ const FeatureList: FeatureItem[] = [
     title: "Support Me",
     description: (
       <>
-        Give me a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/Messiahhh/blog">GitHub</a>.
+        Give me a star on{" "}
+        <a
+          target="_blank"
+          rel="noopener noreferrer"
+          href="https://github.com/Messiahhh/blog"
+        >
+          GitHub
+        </a>
+        .
       </>
     ),
   },
@@ -26,11 +34,7 @@ const FeatureList: FeatureItem[] = [
   },
   {
     title: "Contact Me",
-    description: (
-      <>
-        Drop a message to @mateoguzmana on Twitter.
-      </>
-    ),
+    description: <>Drop a message to @mateoguzmana on Twitter.</>,
   },
 ];
 

@@ -7,7 +7,7 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Mateo Guzmán',
-  tagline: 'Dinosaurs are cool',
+  tagline: 'I have fun coding',
   url: 'https://mateoguzman.net',
   baseUrl: '/',
   onBrokenLinks: 'throw',
