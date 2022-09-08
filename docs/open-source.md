@@ -3,7 +3,7 @@ slug: open-source
 title: Open Source
 ---
 
-In my spare time I try contribute to the open source community by contributing to existing repositories but also creating my own open source libraries.
+In my spare time I try contribute to the open source community by adding new features or fixing bugs to existing repositories but also creating my own open source libraries.
 
 ## React Native Image Picker 🖼️
 
@@ -34,4 +34,8 @@ Created an initial [draft](https://github.com/mateoguzmana/react-native-maps/tre
 
 ## TypeScript Cheat Sheet
 
-## Old contribution for the inverted list
+I added a very complete example for the usage of [useImperativeHandle](https://github.com/typescript-cheatsheets/react/pull/542), the one in the cheat sheet was very basic.
+
+## React Native Draggable View
+
+I implemented the [inverted draggable view](https://github.com/yaraht17/react-native-draggable-view/pull/14) for react-native-draggable-view.
