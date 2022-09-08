@@ -31,3 +31,7 @@ Authentication starter kit for React Native and Next.js in a monorepo using Supa
 ## React Native Maps 🗺️
 
 Created an initial [draft](https://github.com/mateoguzmana/react-native-maps/tree/feature/initial-web-support) to give web support. Didn't continue because there was another person with a better approach but it doesn't seem to be up yet. Might continue it when I have time.
+
+## TypeScript Cheat Sheet
+
+## Old contribution for the inverted list

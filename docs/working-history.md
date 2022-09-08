@@ -40,7 +40,7 @@ Providing guidance to students from the University of South Florida, University 
   Technologies: React Native, TypeScript, Apollo Client, GraphQL, Mapbox and AWS services (Amplify, AppSync & Cognito).
 
 <div style={{ marginLeft: "30px" }}>
-  <img src={LYOS} alt="Kramp App" width="450" />
+  <img src={LYOS} alt="LYOS App" width="450" />
 </div>
 
 ## Kramp Hub
