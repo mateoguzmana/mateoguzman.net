@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkmateoguzman_net=self.webpackChunkmateoguzman_net||[]).push([[2229],{863:a=>{a.exports=JSON.parse('{"label":"react-native-fiesta","permalink":"/blog/tags/react-native-fiesta","allTagsPath":"/blog/tags","count":1}')}}]);
