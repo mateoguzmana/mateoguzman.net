@@ -9,7 +9,17 @@ import KrampApp2 from './img/krampapp2.webp';
 
 This is the list of companies for which I have worked for in the last couple of years.
 
-## Springboard
+## Bitvavo
+
+**Full-time · Amsterdam, Netherlands · 3 yrs**
+
+- **Senior Mobile Engineer**
+
+  May 2022 - Present
+
+  Mainly contributing to the Bitvavo mobile application for Android and iOS using React Native, but also working on the back-end distributed systems using Kafka and NestJS.
+
+<!-- ## Springboard
 
 **Mentor (Software Engineering Career Track) · Part-time · Remote**
 
@@ -41,7 +51,7 @@ Providing guidance to students from the University of South Florida, University 
 
 <div style={{ marginLeft: "30px" }}>
   <img src={LYOS} alt="LYOS App" width="450" />
-</div>
+</div> -->
 
 ## Kramp Hub
 
