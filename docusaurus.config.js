@@ -9,7 +9,7 @@ const config = {
   title: "Mateo Guzmán",
   tagline: "I have fun coding",
   url: "https://mateoguzman.net",
-  baseUrl: "/mateoguzman.net/",
+  baseUrl: "/",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
   favicon: "img/favicon.ico",
