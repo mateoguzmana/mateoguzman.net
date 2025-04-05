@@ -5,9 +5,27 @@ title: Open Source
 
 In my spare time I try contribute to the open source community by adding new features or fixing bugs to existing repositories but also creating my own open source libraries.
 
-## React Native Image Picker 🖼️
+## React Native – Core Contributor [2024-Present]
 
-Added [web support](https://github.com/react-native-image-picker/react-native-image-picker/pull/2014) for [react-native-image-picker](https://github.com/react-native-image-picker/react-native-image-picker), a known React Native library with 7.7k ⭐ on Github.
+I've been a contributor to the React Native project since 2024. I've helped fixing several issues for the core components as well as helping modernising some of the internals with main focus on Android/Kotlin.
+
+React Native is one of the most popular repositories on Github with more than 120k stars and a thriving community.
+
+Some of my highlights include:
+
+- Adding full caching support for the core Image component for Android.
+- Author of the inputAccessoryViewButtonLabel prop for TextInput.
+- Helped triaging and fixing issues both with code and documentation.
+- Participated on the initiative to modernise the Android codebase to Kotlin. Migrated over 70 classes from Java to Kotlin.
+- Participated on the initiative to reduce the public Android API surface by reducing the visibility of over 70 classes.
+
+Learn more about the React Native project [here](https://github.com/facebook/react-native).
+
+## React Native LZ4 📦
+
+LZ4 – C++ React Native bindings for an extremely fast compression algorithm.
+
+- [Repository](https://github.com/mateoguzmana/react-native-lz4)
 
 ## React Native Fiesta 🎉
 
@@ -15,6 +33,10 @@ Creator of Fiesta. A set of celebration animations powered by @shopify/react-nat
 
 - [Website](https://mateoguzmana.github.io/react-native-fiesta/)
 - [Repository](https://github.com/mateoguzmana/react-native-fiesta)
+
+## React Native Image Picker 🖼️
+
+Added [web support](https://github.com/react-native-image-picker/react-native-image-picker/pull/2014) for [react-native-image-picker](https://github.com/react-native-image-picker/react-native-image-picker), a known React Native library with 8.5k ⭐ on Github.
 
 ## React Native + Next.js Monorepo
 

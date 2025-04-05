@@ -5,6 +5,13 @@ title: Personal Projects
 
 To get a bit out of my routine and to explore my entrepreneur skills, I have created some projects that have pushed me a bit more towards the business side of software development.
 
+## Xplorer
+
+Xplorer is your ultimate companion for planetary exploration in the multiverse. An application with generated planet textures using Stable Diffusion XL + LoRA [v2]. The client is composed of two parts, a web application using Next.js and ThreeJS for the 3D rendering of the planets. And a mobile application using React Native (Expo), which embeds the 3D from the web and it's connected to emitting web view messages.
+
+- [Website](https://xplorerapp.net/)
+- [Play Store](https://play.google.com/store/apps/details?id=com.mateoguzmana.xplorer)
+
 ## MyPaws
 
 Help millions of pets around the world find a new home. If you've lost yours, we will help you find it.

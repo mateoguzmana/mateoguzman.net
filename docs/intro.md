@@ -4,6 +4,6 @@ sidebar_position: 1
 
 # About Me
 
-Hey, I'm Mateo. A Software Engineer with passion for mobile development. I actually can say that I have fun writing code, that's why I try to contribute to [open source](./open-source) as well as getting entertained with my [personal projects](./personal-projects).
+Hi, I'm Mateo — a Software Engineer with a strong passion for mobile development. I genuinely enjoy writing code (yes, for fun!), which is why I love contributing to [open source](./open-source) and experimenting with various [personal projects](./personal-projects).
 
-As for my personal life, I'm originally from Medellín, Colombia but I currently live in The Netherlands. I like [travelling](./travelling/) and Europe is a good place to be in if you want to escape of your routine all of a sudden.
+Originally from Medellín, Colombia, I now call The Netherlands home. When I'm not coding, you'll probably find me exploring new places. [Traveling](./travelling/) is one of my favorite ways to break out of routine — and living in Europe definitely makes spontaneous getaways a whole lot easier.
