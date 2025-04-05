@@ -7,7 +7,8 @@ const darkCodeTheme = require("prism-react-renderer/themes/dracula");
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "Mateo Guzmán",
-  tagline: "I have fun coding",
+  tagline:
+    "Powering mobile for the decentralized age | React Native Core Contributor.",
   url: "https://mateoguzman.net",
   baseUrl: "/",
   onBrokenLinks: "throw",
@@ -99,7 +100,7 @@ const config = {
                 href: "https://mateoguzmana.medium.com/",
               },
               {
-                label: "Twitter",
+                label: "X",
                 href: "https://twitter.com/MateoGuzmanA",
               },
             ],

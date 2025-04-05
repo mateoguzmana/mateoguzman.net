@@ -33,4 +33,4 @@ With my private mentoring program I offer calls 1:1 in a weekly basis and a full
 
 I was initially doing this for free to some of my friends and university classmates (because when I was in the university I already knew how to program, hence I was supporting them) but later on I started charging for this since it was very effective.
 
-If you are interested about switching careers and you need a personalised mentorship, drop me a message on my [Twitter](https://twitter.com/MateoGuzmanA).
+If you are interested about switching careers and you need a personalised mentorship, drop me a message on my [X](https://x.com/MateoGuzmanA).

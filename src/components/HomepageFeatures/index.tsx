@@ -9,10 +9,10 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
-    title: "Support Me",
+    title: "Where to find me",
     description: (
       <>
-        Give me a star on{" "}
+        You can start by following me on{" "}
         <a
           target="_blank"
           rel="noopener noreferrer"
@@ -20,15 +20,16 @@ const FeatureList: FeatureItem[] = [
         >
           GitHub
         </a>
-        .
+        , the interesting things happen in there.
       </>
     ),
   },
   {
-    title: "About Me",
+    title: "Why this website?",
     description: (
       <>
-        Having fun with <code>React Native</code>.
+        I built this with Docusaurus because I was simply too lazy to build
+        something more fancy.
       </>
     ),
   },
@@ -40,11 +41,12 @@ const FeatureList: FeatureItem[] = [
         <a
           target="_blank"
           rel="noopener noreferrer"
-          href="https://twitter.com/MateoGuzmanA"
+          href="https://x.com/MateoGuzmanA"
         >
-          Twitter
+          X
         </a>
-        .
+        {", or reach out to "}
+        <a href="mailto:info@mateoguzmana.net">info@mateoguzmana.net</a>.
       </>
     ),
   },
