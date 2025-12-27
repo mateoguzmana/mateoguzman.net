@@ -48,7 +48,6 @@ const countryNameMap: Record<string, string[]> = {
   "israel": ["Israel"],
   "malaysia": ["Malaysia"],
   "hongkong": ["Hong Kong"],
-  "china": ["China"], // For Hong Kong SAR
   "vietnam": ["Vietnam"],
   "norway": ["Norway"],
   "taiwan": ["Taiwan"],
