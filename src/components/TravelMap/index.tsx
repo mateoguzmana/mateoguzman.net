@@ -3,8 +3,14 @@ import {
   ComposableMap,
   Geographies,
   Geography,
+  ZoomableGroup,
 } from "react-simple-maps";
 import styles from "./styles.module.css";
+
+// Ensure React is available globally for react-simple-maps
+if (typeof window !== 'undefined') {
+  (window as any).React = React;
+}
 
 // Use local geography data from static folder
 const geoUrl = "/geo/countries-110m.json";
@@ -76,16 +82,37 @@ const futureCountries = Object.values(futureCountryMap).flat();
 export default function TravelMap(): JSX.Element {
   const [error, setError] = useState(false);
   const [filter, setFilter] = useState<"all" | "visited" | "future">("all");
+  const [tooltipContent, setTooltipContent] = useState("");
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [showTooltip, setShowTooltip] = useState(false);
 
   const handleFilterClick = (newFilter: "all" | "visited" | "future") => {
     setFilter(filter === newFilter ? "all" : newFilter);
   };
 
+  const handleMouseMove = (event: React.MouseEvent) => {
+    setTooltipPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+  };
+
   return (
-    <div className={styles.mapContainer}>
+    <div className={styles.mapContainer} onMouseMove={handleMouseMove}>
       {error && (
         <div className={styles.errorMessage}>
           Unable to load the map. The countries are still displayed below!
+        </div>
+      )}
+      {typeof window !== 'undefined' && showTooltip && tooltipContent && (
+        <div
+          className={styles.tooltip}
+          style={{
+            left: `${tooltipPosition.x + 10}px`,
+            top: `${tooltipPosition.y + 10}px`,
+          }}
+        >
+          {tooltipContent}
         </div>
       )}
       <ComposableMap
@@ -97,56 +124,73 @@ export default function TravelMap(): JSX.Element {
         height={500}
         className={styles.map}
       >
-        <Geographies 
-          geography={geoUrl}
-          onError={() => setError(true)}
-        >
-          {({ geographies }) =>
-            geographies.map((geo) => {
-              const countryName = geo.properties?.name || "";
-              const isVisited = visitedCountries.some(c => 
-                countryName.toLowerCase() === c.toLowerCase()
-              );
-              const isFuture = futureCountries.some(c => 
-                countryName.toLowerCase() === c.toLowerCase()
-              );
+        <ZoomableGroup zoom={1}>
+          <Geographies 
+            geography={geoUrl}
+            onError={() => setError(true)}
+          >
+            {({ geographies }) =>
+              geographies.map((geo) => {
+                const countryName = geo.properties?.name || "";
+                const isVisited = visitedCountries.some(c => 
+                  countryName.toLowerCase() === c.toLowerCase()
+                );
+                const isFuture = futureCountries.some(c => 
+                  countryName.toLowerCase() === c.toLowerCase()
+                );
 
-              // Apply filter logic
-              let fillColor = "#E0E0E0"; // Default unvisited color
-              
-              if (filter === "visited") {
-                fillColor = isVisited ? "#4CAF50" : "#2C2C2C"; // Dim non-visited
-              } else if (filter === "future") {
-                fillColor = isFuture ? "#FFC107" : "#2C2C2C"; // Dim non-future
-              } else {
-                // "all" filter - show everything normally
-                fillColor = isVisited ? "#4CAF50" : isFuture ? "#FFC107" : "#E0E0E0";
-              }
+                // Apply filter logic
+                let fillColor = "#E0E0E0"; // Default unvisited color
+                
+                if (filter === "visited") {
+                  fillColor = isVisited ? "#4CAF50" : "#2C2C2C"; // Dim non-visited
+                } else if (filter === "future") {
+                  fillColor = isFuture ? "#FFC107" : "#2C2C2C"; // Dim non-future
+                } else {
+                  // "all" filter - show everything normally
+                  fillColor = isVisited ? "#4CAF50" : isFuture ? "#FFC107" : "#E0E0E0";
+                }
 
-              return (
-                <Geography
-                  key={geo.rsmKey}
-                  geography={geo}
-                  fill={fillColor}
-                  stroke="#FFFFFF"
-                  strokeWidth={0.5}
-                  style={{
-                    default: { outline: "none" },
-                    hover: {
-                      fill: isVisited
-                        ? "#45a049"
-                        : isFuture
-                        ? "#FFB300"
-                        : "#BDBDBD",
-                      outline: "none",
-                    },
-                    pressed: { outline: "none" },
-                  }}
-                />
-              );
-            })
-          }
-        </Geographies>
+                const getStatusLabel = () => {
+                  if (isVisited) return "✓ Visited";
+                  if (isFuture) return "⭐ Future Plan";
+                  return "";
+                };
+
+                return (
+                  <Geography
+                    key={geo.rsmKey}
+                    geography={geo}
+                    fill={fillColor}
+                    stroke="#FFFFFF"
+                    strokeWidth={0.5}
+                    onMouseEnter={() => {
+                      const status = getStatusLabel();
+                      setTooltipContent(`${countryName}${status ? ` - ${status}` : ""}`);
+                      setShowTooltip(true);
+                    }}
+                    onMouseLeave={() => {
+                      setShowTooltip(false);
+                    }}
+                    style={{
+                      default: { outline: "none", transition: "all 0.2s ease" },
+                      hover: {
+                        fill: isVisited
+                          ? "#45a049"
+                          : isFuture
+                          ? "#FFB300"
+                          : "#BDBDBD",
+                        outline: "none",
+                        cursor: "pointer",
+                      },
+                      pressed: { outline: "none" },
+                    }}
+                  />
+                );
+              })
+            }
+          </Geographies>
+        </ZoomableGroup>
       </ComposableMap>
       <div className={styles.legend}>
         <button 
