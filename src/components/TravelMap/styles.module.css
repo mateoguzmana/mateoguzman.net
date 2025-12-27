@@ -1,0 +1,71 @@
+.mapContainer {
+  margin: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.map {
+  max-width: 100%;
+  height: auto;
+}
+
+.errorMessage {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background-color: var(--ifm-color-warning-contrast-background);
+  color: var(--ifm-color-warning-contrast-foreground);
+  border: 1px solid var(--ifm-color-warning-dark);
+  border-radius: 4px;
+  text-align: center;
+}
+
+.legend {
+  display: flex;
+  gap: 2rem;
+  margin-top: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: 2px solid transparent;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+.legendItem:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.legendItem.active {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+}
+
+.legendItem span:first-child {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.visitedColor {
+  background-color: #4CAF50;
+}
+
+.futureColor {
+  background-color: #FFC107;
+}
