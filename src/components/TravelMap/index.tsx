@@ -76,6 +76,11 @@ const futureCountries = Object.values(futureCountryMap).flat();
 
 export default function TravelMap(): JSX.Element {
   const [error, setError] = useState(false);
+  const [filter, setFilter] = useState<"all" | "visited" | "future">("all");
+
+  const handleFilterClick = (newFilter: "all" | "visited" | "future") => {
+    setFilter(filter === newFilter ? "all" : newFilter);
+  };
 
   return (
     <div className={styles.mapContainer}>
@@ -106,17 +111,26 @@ export default function TravelMap(): JSX.Element {
                 countryName.toLowerCase() === c.toLowerCase()
               );
 
+              // Apply filter logic
+              let shouldHighlight = true;
+              let fillColor = "#E0E0E0"; // Default unvisited color
+              
+              if (filter === "visited") {
+                shouldHighlight = isVisited;
+                fillColor = isVisited ? "#4CAF50" : "#2C2C2C"; // Dim non-visited
+              } else if (filter === "future") {
+                shouldHighlight = isFuture;
+                fillColor = isFuture ? "#FFC107" : "#2C2C2C"; // Dim non-future
+              } else {
+                // "all" filter - show everything normally
+                fillColor = isVisited ? "#4CAF50" : isFuture ? "#FFC107" : "#E0E0E0";
+              }
+
               return (
                 <Geography
                   key={geo.rsmKey}
                   geography={geo}
-                  fill={
-                    isVisited
-                      ? "#4CAF50"
-                      : isFuture
-                      ? "#FFC107"
-                      : "#E0E0E0"
-                  }
+                  fill={fillColor}
                   stroke="#FFFFFF"
                   strokeWidth={0.5}
                   style={{
@@ -138,14 +152,22 @@ export default function TravelMap(): JSX.Element {
         </Geographies>
       </ComposableMap>
       <div className={styles.legend}>
-        <div className={styles.legendItem}>
+        <button 
+          className={`${styles.legendItem} ${filter === "visited" ? styles.active : ""}`}
+          onClick={() => handleFilterClick("visited")}
+          aria-pressed={filter === "visited"}
+        >
           <span className={styles.visitedColor}></span>
           <span>Visited Countries ({Object.keys(countryNameMap).length})</span>
-        </div>
-        <div className={styles.legendItem}>
+        </button>
+        <button 
+          className={`${styles.legendItem} ${filter === "future" ? styles.active : ""}`}
+          onClick={() => handleFilterClick("future")}
+          aria-pressed={filter === "future"}
+        >
           <span className={styles.futureColor}></span>
           <span>Future Plans ({Object.keys(futureCountryMap).length})</span>
-        </div>
+        </button>
       </div>
     </div>
   );
