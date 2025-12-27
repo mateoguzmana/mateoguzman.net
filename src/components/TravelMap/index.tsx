@@ -4,7 +4,9 @@ import {
   Geographies,
   Geography,
   ZoomableGroup,
+  Annotation,
 } from "react-simple-maps";
+import { geoCentroid } from "d3-geo";
 import styles from "./styles.module.css";
 
 // Ensure React is available globally for react-simple-maps
@@ -79,12 +81,30 @@ const futureCountryMap: Record<string, string[]> = {
 const visitedCountries = Object.values(countryNameMap).flat();
 const futureCountries = Object.values(futureCountryMap).flat();
 
+// Major countries that should have labels displayed
+const majorCountries = [
+  "United States of America", "USA", "United States",
+  "China", "Russia", "Russian Federation",
+  "Canada", "Brazil", "Australia",
+  "India", "Argentina", "Kazakhstan",
+  "Algeria", "Saudi Arabia", "Mexico",
+  "Indonesia", "Libya", "Iran",
+  "Mongolia", "Peru", "Chad",
+  "Niger", "Angola", "Mali",
+  "South Africa", "Colombia", "Ethiopia",
+  "Bolivia", "Mauritania", "Egypt",
+  "Tanzania", "Nigeria", "Venezuela",
+  "Pakistan", "Turkey", "Chile"
+];
+
 export default function TravelMap(): JSX.Element {
   const [error, setError] = useState(false);
   const [filter, setFilter] = useState<"all" | "visited" | "future">("all");
   const [tooltipContent, setTooltipContent] = useState("");
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [showTooltip, setShowTooltip] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [center, setCenter] = useState<[number, number]>([0, 20]);
 
   const handleFilterClick = (newFilter: "all" | "visited" | "future") => {
     setFilter(filter === newFilter ? "all" : newFilter);
@@ -95,6 +115,23 @@ export default function TravelMap(): JSX.Element {
       x: event.clientX,
       y: event.clientY,
     });
+  };
+
+  const handleZoomIn = () => {
+    if (zoom < 4) {
+      setZoom(zoom + 0.5);
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (zoom > 1) {
+      setZoom(zoom - 0.5);
+    }
+  };
+
+  const handleResetZoom = () => {
+    setZoom(1);
+    setCenter([0, 20]);
   };
 
   return (
@@ -115,83 +152,156 @@ export default function TravelMap(): JSX.Element {
           {tooltipContent}
         </div>
       )}
-      <ComposableMap
-        projectionConfig={{
-          rotate: [-10, 0, 0],
-          scale: 180,
-        }}
-        width={1000}
-        height={500}
-        className={styles.map}
-      >
-        <ZoomableGroup zoom={1}>
-          <Geographies 
-            geography={geoUrl}
-            onError={() => setError(true)}
+      <div className={styles.mapWrapper}>
+        <div className={styles.zoomControls}>
+          <button 
+            onClick={handleZoomIn} 
+            className={styles.zoomButton}
+            disabled={zoom >= 4}
+            aria-label="Zoom in"
+            title="Zoom in"
           >
-            {({ geographies }) =>
-              geographies.map((geo) => {
-                const countryName = geo.properties?.name || "";
-                const isVisited = visitedCountries.some(c => 
-                  countryName.toLowerCase() === c.toLowerCase()
-                );
-                const isFuture = futureCountries.some(c => 
-                  countryName.toLowerCase() === c.toLowerCase()
-                );
-
-                // Apply filter logic
-                let fillColor = "#E0E0E0"; // Default unvisited color
-                
-                if (filter === "visited") {
-                  fillColor = isVisited ? "#4CAF50" : "#2C2C2C"; // Dim non-visited
-                } else if (filter === "future") {
-                  fillColor = isFuture ? "#FFC107" : "#2C2C2C"; // Dim non-future
-                } else {
-                  // "all" filter - show everything normally
-                  fillColor = isVisited ? "#4CAF50" : isFuture ? "#FFC107" : "#E0E0E0";
-                }
-
-                const getStatusLabel = () => {
-                  if (isVisited) return "✓ Visited";
-                  if (isFuture) return "⭐ Future Plan";
-                  return "";
-                };
+            +
+          </button>
+          <button 
+            onClick={handleZoomOut} 
+            className={styles.zoomButton}
+            disabled={zoom <= 1}
+            aria-label="Zoom out"
+            title="Zoom out"
+          >
+            −
+          </button>
+          <button 
+            onClick={handleResetZoom} 
+            className={styles.zoomButton}
+            aria-label="Reset zoom"
+            title="Reset zoom"
+          >
+            ⟲
+          </button>
+        </div>
+        <ComposableMap
+          projectionConfig={{
+            rotate: [-10, 0, 0],
+            scale: 180,
+          }}
+          width={1000}
+          height={500}
+          className={styles.map}
+        >
+          <ZoomableGroup zoom={zoom} center={center}>
+            <Geographies 
+              geography={geoUrl}
+              onError={() => setError(true)}
+            >
+              {({ geographies }) => {
+                const majorGeos = geographies.filter((geo) => {
+                  const countryName = geo.properties?.name || "";
+                  return majorCountries.some(c =>
+                    countryName.toLowerCase().includes(c.toLowerCase()) ||
+                    c.toLowerCase().includes(countryName.toLowerCase())
+                  );
+                });
 
                 return (
-                  <Geography
-                    key={geo.rsmKey}
-                    geography={geo}
-                    fill={fillColor}
-                    stroke="#FFFFFF"
-                    strokeWidth={0.5}
-                    onMouseEnter={() => {
-                      const status = getStatusLabel();
-                      setTooltipContent(`${countryName}${status ? ` - ${status}` : ""}`);
-                      setShowTooltip(true);
-                    }}
-                    onMouseLeave={() => {
-                      setShowTooltip(false);
-                    }}
-                    style={{
-                      default: { outline: "none", transition: "all 0.2s ease" },
-                      hover: {
-                        fill: isVisited
-                          ? "#45a049"
-                          : isFuture
-                          ? "#FFB300"
-                          : "#BDBDBD",
-                        outline: "none",
-                        cursor: "pointer",
-                      },
-                      pressed: { outline: "none" },
-                    }}
-                  />
+                  <>
+                    {geographies.map((geo) => {
+                      const countryName = geo.properties?.name || "";
+                      const isVisited = visitedCountries.some(c => 
+                        countryName.toLowerCase() === c.toLowerCase()
+                      );
+                      const isFuture = futureCountries.some(c => 
+                        countryName.toLowerCase() === c.toLowerCase()
+                      );
+
+                      // Apply filter logic
+                      let fillColor = "#E0E0E0"; // Default unvisited color
+                      
+                      if (filter === "visited") {
+                        fillColor = isVisited ? "#4CAF50" : "#2C2C2C"; // Dim non-visited
+                      } else if (filter === "future") {
+                        fillColor = isFuture ? "#FFC107" : "#2C2C2C"; // Dim non-future
+                      } else {
+                        // "all" filter - show everything normally
+                        fillColor = isVisited ? "#4CAF50" : isFuture ? "#FFC107" : "#E0E0E0";
+                      }
+
+                      const getStatusLabel = () => {
+                        if (isVisited) return "✓ Visited";
+                        if (isFuture) return "⭐ Future Plan";
+                        return "";
+                      };
+
+                      return (
+                        <Geography
+                          key={geo.rsmKey}
+                          geography={geo}
+                          fill={fillColor}
+                          stroke="#FFFFFF"
+                          strokeWidth={0.5}
+                          onMouseEnter={() => {
+                            const status = getStatusLabel();
+                            setTooltipContent(`${countryName}${status ? ` - ${status}` : ""}`);
+                            setShowTooltip(true);
+                          }}
+                          onMouseLeave={() => {
+                            setShowTooltip(false);
+                          }}
+                          style={{
+                            default: { outline: "none", transition: "all 0.2s ease" },
+                            hover: {
+                              fill: isVisited
+                                ? "#45a049"
+                                : isFuture
+                                ? "#FFB300"
+                                : "#BDBDBD",
+                              outline: "none",
+                              cursor: "pointer",
+                            },
+                            pressed: { outline: "none" },
+                          }}
+                        />
+                      );
+                    })}
+                    {zoom >= 1.5 && majorGeos.map((geo) => {
+                      const centroid = geoCentroid(geo);
+                      const countryName = geo.properties?.name || "";
+                      const shortName = countryName.length > 12 ? countryName.substring(0, 12) : countryName;
+
+                      return (
+                        <Annotation
+                          key={`label-${geo.rsmKey}`}
+                          subject={centroid}
+                          dx={0}
+                          dy={0}
+                          connectorProps={{
+                            stroke: "transparent"
+                          }}
+                        >
+                          <text
+                            textAnchor="middle"
+                            alignmentBaseline="middle"
+                            className={styles.countryLabel}
+                            style={{
+                              fontSize: `${11 / zoom}px`,
+                              fill: "#333",
+                              fontWeight: 600,
+                              pointerEvents: "none",
+                            }}
+                          >
+                            {shortName}
+                          </text>
+                        </Annotation>
+                      );
+                    })}
+                  </>
                 );
-              })
-            }
-          </Geographies>
-        </ZoomableGroup>
-      </ComposableMap>
+              }}
+            </Geographies>
+          </ZoomableGroup>
+        </ComposableMap>
+      </div>
       <div className={styles.legend}>
         <button 
           className={`${styles.legendItem} ${filter === "visited" ? styles.active : ""}`}
