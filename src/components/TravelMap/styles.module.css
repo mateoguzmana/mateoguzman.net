@@ -1,0 +1,50 @@
+.mapContainer {
+  margin: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.map {
+  max-width: 100%;
+  height: auto;
+}
+
+.errorMessage {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background-color: #fff3cd;
+  color: #856404;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.legend {
+  display: flex;
+  gap: 2rem;
+  margin-top: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legendItem span:first-child {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.visitedColor {
+  background-color: #4CAF50;
+}
+
+.futureColor {
+  background-color: #FFC107;
+}
