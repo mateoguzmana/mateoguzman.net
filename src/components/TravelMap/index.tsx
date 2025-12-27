@@ -112,14 +112,11 @@ export default function TravelMap(): JSX.Element {
               );
 
               // Apply filter logic
-              let shouldHighlight = true;
               let fillColor = "#E0E0E0"; // Default unvisited color
               
               if (filter === "visited") {
-                shouldHighlight = isVisited;
                 fillColor = isVisited ? "#4CAF50" : "#2C2C2C"; // Dim non-visited
               } else if (filter === "future") {
-                shouldHighlight = isFuture;
                 fillColor = isFuture ? "#FFC107" : "#2C2C2C"; // Dim non-future
               } else {
                 // "all" filter - show everything normally
