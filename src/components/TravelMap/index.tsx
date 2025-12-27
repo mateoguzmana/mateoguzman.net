@@ -86,10 +86,10 @@ export default function TravelMap(): JSX.Element {
       )}
       <ComposableMap
         projectionConfig={{
-          scale: 147,
+          scale: 180,
         }}
-        width={800}
-        height={400}
+        width={1000}
+        height={500}
         className={styles.map}
       >
         <Geographies 
