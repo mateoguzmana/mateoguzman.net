@@ -9,73 +9,70 @@ import styles from "./styles.module.css";
 // Use local geography data from static folder
 const geoUrl = "/geo/countries-110m.json";
 
-// Country names that match the world-atlas topology
-// Some names differ from common names (e.g., "Czechia" vs "Czech Republic")
-const visitedCountries = [
-  "Colombia",
-  "Peru", 
-  "Brazil",
-  "Panama",
-  "Netherlands",
-  "Germany",
-  "France",
-  "Belgium",
-  "Spain",
-  "Italy",
-  "Vatican", // May be "Vatican City" or "Holy See"
-  "Bulgaria",
-  "Switzerland",
-  "Czechia", // Also try "Czech Republic"
-  "Czech Republic",
-  "Austria",
-  "Romania",
-  "Hungary",
-  "Slovakia",
-  "Portugal",
-  "Poland",
-  "Slovenia",
-  "Turkey",
-  "Latvia",
-  "Monaco",
-  "Greece",
-  "Qatar",
-  "United Arab Emirates",
-  "United Kingdom",
-  "England", // UK subdivisions
-  "Scotland",
-  "Mexico",
-  "India",
-  "Sri Lanka",
-  "Egypt",
-  "Jordan",
-  "Palestine",
-  "Israel",
-  "Malaysia",
-  "Hong Kong", // May be part of China
-  "China", // Include China for Hong Kong
-  "Vietnam",
-  "Norway",
-  "Taiwan",
-  "Montenegro",
-  "Croatia",
-  "South Korea",
-  "Korea",
-  "Republic of Korea",
-  "Thailand",
-  "Cambodia",
-  "Singapore",
-  "Kazakhstan",
-  "Uzbekistan",
-  "Laos",
-];
+// Country name mapping - handles variations in country names from world-atlas
+const countryNameMap: Record<string, string[]> = {
+  "colombia": ["Colombia"],
+  "peru": ["Peru"],
+  "brazil": ["Brazil"],
+  "panama": ["Panama"],
+  "netherlands": ["Netherlands"],
+  "germany": ["Germany"],
+  "france": ["France"],
+  "belgium": ["Belgium"],
+  "spain": ["Spain"],
+  "italy": ["Italy"],
+  "vatican": ["Vatican", "Vatican City", "Holy See"],
+  "bulgaria": ["Bulgaria"],
+  "switzerland": ["Switzerland"],
+  "czechia": ["Czechia", "Czech Republic"],
+  "austria": ["Austria"],
+  "romania": ["Romania"],
+  "hungary": ["Hungary"],
+  "slovakia": ["Slovakia"],
+  "portugal": ["Portugal"],
+  "poland": ["Poland"],
+  "slovenia": ["Slovenia"],
+  "turkey": ["Turkey"],
+  "latvia": ["Latvia"],
+  "monaco": ["Monaco"],
+  "greece": ["Greece"],
+  "qatar": ["Qatar"],
+  "uae": ["United Arab Emirates", "UAE"],
+  "uk": ["United Kingdom", "England", "Scotland", "Wales", "Northern Ireland"],
+  "mexico": ["Mexico"],
+  "india": ["India"],
+  "srilanka": ["Sri Lanka"],
+  "egypt": ["Egypt"],
+  "jordan": ["Jordan"],
+  "palestine": ["Palestine", "West Bank"],
+  "israel": ["Israel"],
+  "malaysia": ["Malaysia"],
+  "hongkong": ["Hong Kong"],
+  "china": ["China"], // For Hong Kong SAR
+  "vietnam": ["Vietnam"],
+  "norway": ["Norway"],
+  "taiwan": ["Taiwan"],
+  "montenegro": ["Montenegro"],
+  "croatia": ["Croatia"],
+  "southkorea": ["South Korea", "Korea", "Republic of Korea"],
+  "thailand": ["Thailand"],
+  "cambodia": ["Cambodia"],
+  "singapore": ["Singapore"],
+  "kazakhstan": ["Kazakhstan"],
+  "uzbekistan": ["Uzbekistan"],
+  "laos": ["Laos"],
+};
 
-const futureCountries = [
-  "Argentina",
-  "Dominican Republic",
-  "Dominican Rep.",
-  "Georgia",
-  "Philippines",
-];
+const futureCountryMap: Record<string, string[]> = {
+  "argentina": ["Argentina"],
+  "dominican": ["Dominican Republic", "Dominican Rep."],
+  "georgia": ["Georgia"],
+  "philippines": ["Philippines"],
+};
+
+// Get all country names from mapping
+const visitedCountries = Object.values(countryNameMap).flat();
+const futureCountries = Object.values(futureCountryMap).flat();
 
 export default function TravelMap(): JSX.Element {
   const [error, setError] = useState(false);
@@ -103,12 +100,10 @@ export default function TravelMap(): JSX.Element {
             geographies.map((geo) => {
               const countryName = geo.properties?.name || "";
               const isVisited = visitedCountries.some(c => 
-                countryName.toLowerCase().includes(c.toLowerCase()) ||
-                c.toLowerCase().includes(countryName.toLowerCase())
+                countryName.toLowerCase() === c.toLowerCase()
               );
               const isFuture = futureCountries.some(c => 
-                countryName.toLowerCase().includes(c.toLowerCase()) ||
-                c.toLowerCase().includes(countryName.toLowerCase())
+                countryName.toLowerCase() === c.toLowerCase()
               );
 
               return (
@@ -145,11 +140,11 @@ export default function TravelMap(): JSX.Element {
       <div className={styles.legend}>
         <div className={styles.legendItem}>
           <span className={styles.visitedColor}></span>
-          <span>Visited Countries (49)</span>
+          <span>Visited Countries ({Object.keys(countryNameMap).length})</span>
         </div>
         <div className={styles.legendItem}>
           <span className={styles.futureColor}></span>
-          <span>Future Plans (4)</span>
+          <span>Future Plans ({Object.keys(futureCountryMap).length})</span>
         </div>
       </div>
     </div>
