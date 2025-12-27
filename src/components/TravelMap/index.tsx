@@ -91,6 +91,7 @@ export default function TravelMap(): JSX.Element {
       )}
       <ComposableMap
         projectionConfig={{
+          rotate: [-10, 0, 0],
           scale: 180,
         }}
         width={1000}
