@@ -17,6 +17,11 @@ if (typeof window !== 'undefined') {
 // Use local geography data from static folder
 const geoUrl = "/geo/countries-110m.json";
 
+// Constants for label display
+const MAX_COUNTRY_NAME_LENGTH = 12;
+const BASE_LABEL_FONT_SIZE = 11;
+const MIN_ZOOM_FOR_LABELS = 1.5;
+
 // Country name mapping - handles variations in country names from world-atlas
 const countryNameMap: Record<string, string[]> = {
   "colombia": ["Colombia"],
@@ -264,10 +269,12 @@ export default function TravelMap(): JSX.Element {
                         />
                       );
                     })}
-                    {zoom >= 1.5 && majorGeos.map((geo) => {
+                    {zoom >= MIN_ZOOM_FOR_LABELS && majorGeos.map((geo) => {
                       const centroid = geoCentroid(geo);
                       const countryName = geo.properties?.name || "";
-                      const shortName = countryName.length > 12 ? countryName.substring(0, 12) : countryName;
+                      const shortName = countryName.length > MAX_COUNTRY_NAME_LENGTH 
+                        ? countryName.substring(0, MAX_COUNTRY_NAME_LENGTH) 
+                        : countryName;
 
                       return (
                         <Annotation
@@ -284,7 +291,7 @@ export default function TravelMap(): JSX.Element {
                             alignmentBaseline="middle"
                             className={styles.countryLabel}
                             style={{
-                              fontSize: `${11 / zoom}px`,
+                              fontSize: `${BASE_LABEL_FONT_SIZE / zoom}px`,
                               fill: "#333",
                               fontWeight: 600,
                               pointerEvents: "none",
