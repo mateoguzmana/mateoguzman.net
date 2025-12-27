@@ -3,7 +3,6 @@ import {
   ComposableMap,
   Geographies,
   Geography,
-  Marker,
 } from "react-simple-maps";
 import styles from "./styles.module.css";
 
@@ -72,6 +71,34 @@ const futureCountries = [
 export default function TravelMap(): JSX.Element {
   const [error, setError] = useState(false);
 
+  // Get CSS custom property values for colors
+  const getCSSVariable = (varName: string) => {
+    if (typeof window !== 'undefined') {
+      return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || varName;
+    }
+    // Fallback values for SSR
+    const fallbacks: Record<string, string> = {
+      '--visited-color': '#4CAF50',
+      '--visited-hover-color': '#45a049',
+      '--future-color': '#FFC107',
+      '--future-hover-color': '#FFB300',
+      '--unvisited-color': '#E0E0E0',
+      '--unvisited-hover-color': '#BDBDBD',
+      '--map-stroke-color': '#FFFFFF',
+    };
+    return fallbacks[varName] || varName;
+  };
+
+  const colors = {
+    visited: getCSSVariable('--visited-color'),
+    visitedHover: getCSSVariable('--visited-hover-color'),
+    future: getCSSVariable('--future-color'),
+    futureHover: getCSSVariable('--future-hover-color'),
+    unvisited: getCSSVariable('--unvisited-color'),
+    unvisitedHover: getCSSVariable('--unvisited-hover-color'),
+    stroke: getCSSVariable('--map-stroke-color'),
+  };
+
   return (
     <div className={styles.mapContainer}>
       {error && (
@@ -103,21 +130,21 @@ export default function TravelMap(): JSX.Element {
                   geography={geo}
                   fill={
                     isVisited
-                      ? "#4CAF50"
+                      ? colors.visited
                       : isFuture
-                      ? "#FFC107"
-                      : "#E0E0E0"
+                      ? colors.future
+                      : colors.unvisited
                   }
-                  stroke="#FFFFFF"
+                  stroke={colors.stroke}
                   strokeWidth={0.5}
                   style={{
                     default: { outline: "none" },
                     hover: {
                       fill: isVisited
-                        ? "#45a049"
+                        ? colors.visitedHover
                         : isFuture
-                        ? "#FFB300"
-                        : "#BDBDBD",
+                        ? colors.futureHover
+                        : colors.unvisitedHover,
                       outline: "none",
                     },
                     pressed: { outline: "none" },
