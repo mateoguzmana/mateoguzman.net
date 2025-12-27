@@ -4,13 +4,6 @@
   flex-direction: column;
   align-items: center;
   width: 100%;
-  --visited-color: #4CAF50;
-  --visited-hover-color: #45a049;
-  --future-color: #FFC107;
-  --future-hover-color: #FFB300;
-  --unvisited-color: #E0E0E0;
-  --unvisited-hover-color: #BDBDBD;
-  --map-stroke-color: #FFFFFF;
 }
 
 .map {
@@ -50,9 +43,9 @@
 }
 
 .visitedColor {
-  background-color: var(--visited-color);
+  background-color: #4CAF50;
 }
 
 .futureColor {
-  background-color: var(--future-color);
+  background-color: #FFC107;
 }

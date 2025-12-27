@@ -6,98 +6,79 @@ import {
 } from "react-simple-maps";
 import styles from "./styles.module.css";
 
-const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+// Use local geography data from static folder
+const geoUrl = "/geo/countries-110m.json";
 
-// Country codes extracted from the flag emojis on the travelling.md page
+// Country names that match the world-atlas topology
+// Some names differ from common names (e.g., "Czechia" vs "Czech Republic")
 const visitedCountries = [
-  "COL", // 🇨🇴 Colombia
-  "PER", // 🇵🇪 Peru
-  "BRA", // 🇧🇷 Brazil
-  "PAN", // 🇵🇦 Panama
-  "NLD", // 🇳🇱 Netherlands
-  "DEU", // 🇩🇪 Germany
-  "FRA", // 🇫🇷 France
-  "BEL", // 🇧🇪 Belgium
-  "ESP", // 🇪🇸 Spain
-  "ITA", // 🇮🇹 Italy
-  "VAT", // 🇻🇦 Vatican
-  "BGR", // 🇧🇬 Bulgaria
-  "CHE", // 🇨🇭 Switzerland
-  "CZE", // 🇨🇿 Czech Republic
-  "AUT", // 🇦🇹 Austria
-  "ROU", // 🇷🇴 Romania
-  "HUN", // 🇭🇺 Hungary
-  "SVK", // 🇸🇰 Slovakia
-  "PRT", // 🇵🇹 Portugal
-  "POL", // 🇵🇱 Poland
-  "SVN", // 🇸🇮 Slovenia
-  "TUR", // 🇹🇷 Turkey
-  "LVA", // 🇱🇻 Latvia
-  "MCO", // 🇲🇨 Monaco
-  "GRC", // 🇬🇷 Greece
-  "QAT", // 🇶🇦 Qatar
-  "ARE", // 🇦🇪 UAE
-  "GBR", // 🏴󠁧󠁢󠁥󠁮󠁧󠁿 England (UK)
-  "MEX", // 🇲🇽 Mexico
-  "IND", // 🇮🇳 India
-  "LKA", // 🇱🇰 Sri Lanka
-  "EGY", // 🇪🇬 Egypt
-  "JOR", // 🇯🇴 Jordan
-  "PSE", // 🇵🇸 Palestine
-  "ISR", // 🇮🇱 Israel
-  "MYS", // 🇲🇾 Malaysia
-  "HKG", // 🇭🇰 Hong Kong
-  "VNM", // 🇻🇳 Vietnam
-  "NOR", // 🇳🇴 Norway
-  "TWN", // 🇹🇼 Taiwan
-  "MNE", // 🇲🇪 Montenegro
-  "HRV", // 🇭🇷 Croatia
-  "KOR", // 🇰🇷 South Korea
-  "THA", // 🇹🇭 Thailand
-  "KHM", // 🇰🇭 Cambodia
-  "SGP", // 🇸🇬 Singapore
-  "KAZ", // 🇰🇿 Kazakhstan
-  "UZB", // 🇺🇿 Uzbekistan
-  "LAO", // 🇱🇦 Laos
+  "Colombia",
+  "Peru", 
+  "Brazil",
+  "Panama",
+  "Netherlands",
+  "Germany",
+  "France",
+  "Belgium",
+  "Spain",
+  "Italy",
+  "Vatican", // May be "Vatican City" or "Holy See"
+  "Bulgaria",
+  "Switzerland",
+  "Czechia", // Also try "Czech Republic"
+  "Czech Republic",
+  "Austria",
+  "Romania",
+  "Hungary",
+  "Slovakia",
+  "Portugal",
+  "Poland",
+  "Slovenia",
+  "Turkey",
+  "Latvia",
+  "Monaco",
+  "Greece",
+  "Qatar",
+  "United Arab Emirates",
+  "United Kingdom",
+  "England", // UK subdivisions
+  "Scotland",
+  "Mexico",
+  "India",
+  "Sri Lanka",
+  "Egypt",
+  "Jordan",
+  "Palestine",
+  "Israel",
+  "Malaysia",
+  "Hong Kong", // May be part of China
+  "China", // Include China for Hong Kong
+  "Vietnam",
+  "Norway",
+  "Taiwan",
+  "Montenegro",
+  "Croatia",
+  "South Korea",
+  "Korea",
+  "Republic of Korea",
+  "Thailand",
+  "Cambodia",
+  "Singapore",
+  "Kazakhstan",
+  "Uzbekistan",
+  "Laos",
 ];
 
 const futureCountries = [
-  "ARG", // 🇦🇷 Argentina
-  "DOM", // 🇩🇴 Dominican Republic
-  "GEO", // 🇬🇪 Georgia
-  "PHL", // 🇵🇭 Philippines
+  "Argentina",
+  "Dominican Republic",
+  "Dominican Rep.",
+  "Georgia",
+  "Philippines",
 ];
 
 export default function TravelMap(): JSX.Element {
   const [error, setError] = useState(false);
-
-  // Get CSS custom property values for colors
-  const getCSSVariable = (varName: string) => {
-    if (typeof window !== 'undefined') {
-      return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || varName;
-    }
-    // Fallback values for SSR
-    const fallbacks: Record<string, string> = {
-      '--visited-color': '#4CAF50',
-      '--visited-hover-color': '#45a049',
-      '--future-color': '#FFC107',
-      '--future-hover-color': '#FFB300',
-      '--unvisited-color': '#E0E0E0',
-      '--unvisited-hover-color': '#BDBDBD',
-      '--map-stroke-color': '#FFFFFF',
-    };
-    return fallbacks[varName] || varName;
-  };
-
-  const colors = {
-    visited: getCSSVariable('--visited-color'),
-    visitedHover: getCSSVariable('--visited-hover-color'),
-    future: getCSSVariable('--future-color'),
-    futureHover: getCSSVariable('--future-hover-color'),
-    unvisited: getCSSVariable('--unvisited-color'),
-    unvisitedHover: getCSSVariable('--unvisited-hover-color'),
-    stroke: getCSSVariable('--map-stroke-color'),
-  };
 
   return (
     <div className={styles.mapContainer}>
@@ -120,9 +101,15 @@ export default function TravelMap(): JSX.Element {
         >
           {({ geographies }) =>
             geographies.map((geo) => {
-              const countryCode = geo.id;
-              const isVisited = visitedCountries.includes(countryCode);
-              const isFuture = futureCountries.includes(countryCode);
+              const countryName = geo.properties?.name || "";
+              const isVisited = visitedCountries.some(c => 
+                countryName.toLowerCase().includes(c.toLowerCase()) ||
+                c.toLowerCase().includes(countryName.toLowerCase())
+              );
+              const isFuture = futureCountries.some(c => 
+                countryName.toLowerCase().includes(c.toLowerCase()) ||
+                c.toLowerCase().includes(countryName.toLowerCase())
+              );
 
               return (
                 <Geography
@@ -130,21 +117,21 @@ export default function TravelMap(): JSX.Element {
                   geography={geo}
                   fill={
                     isVisited
-                      ? colors.visited
+                      ? "#4CAF50"
                       : isFuture
-                      ? colors.future
-                      : colors.unvisited
+                      ? "#FFC107"
+                      : "#E0E0E0"
                   }
-                  stroke={colors.stroke}
+                  stroke="#FFFFFF"
                   strokeWidth={0.5}
                   style={{
                     default: { outline: "none" },
                     hover: {
                       fill: isVisited
-                        ? colors.visitedHover
+                        ? "#45a049"
                         : isFuture
-                        ? colors.futureHover
-                        : colors.unvisitedHover,
+                        ? "#FFB300"
+                        : "#BDBDBD",
                       outline: "none",
                     },
                     pressed: { outline: "none" },
@@ -158,11 +145,11 @@ export default function TravelMap(): JSX.Element {
       <div className={styles.legend}>
         <div className={styles.legendItem}>
           <span className={styles.visitedColor}></span>
-          <span>Visited Countries ({visitedCountries.length})</span>
+          <span>Visited Countries (49)</span>
         </div>
         <div className={styles.legendItem}>
           <span className={styles.futureColor}></span>
-          <span>Future Plans ({futureCountries.length})</span>
+          <span>Future Plans (4)</span>
         </div>
       </div>
     </div>
