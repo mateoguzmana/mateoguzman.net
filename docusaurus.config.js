@@ -8,7 +8,7 @@ const darkCodeTheme = require("prism-react-renderer/themes/dracula");
 const config = {
   title: "Mateo Guzmán",
   tagline:
-    "Powering mobile for the decentralized age | React Native Core Contributor.",
+    "Senior mobile engineer · React Native core contributor. Notes from the hard parts: bundle size, native modules, performance, migrations.",
   url: "https://mateoguzman.net",
   baseUrl: "/",
   onBrokenLinks: "throw",

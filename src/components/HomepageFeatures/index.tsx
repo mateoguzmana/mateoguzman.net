@@ -1,64 +1,133 @@
 import React from "react";
 import clsx from "clsx";
+import Link from "@docusaurus/Link";
 import styles from "./styles.module.css";
 
 type FeatureItem = {
   title: string;
-  description: JSX.Element;
+  body: JSX.Element;
 };
 
 const FeatureList: FeatureItem[] = [
   {
-    title: "Where to find me",
-    description: (
-      <>
-        You can start by following me on{" "}
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          href="https://github.com/mateoguzmana"
-        >
-          GitHub
-        </a>
-        , the interesting things happen in there.
-      </>
+    title: "What I work on",
+    body: (
+      <ul className={styles.list}>
+        <li>Bundle size and cold-start performance</li>
+        <li>Native modules in Kotlin, Swift, and C++ via JSI</li>
+        <li>React Native version upgrades and migrations</li>
+        <li>Hermes profiling, on-device caching, asset pipelines</li>
+        <li>The long-tail problems that don't have a Stack Overflow answer</li>
+      </ul>
     ),
   },
   {
-    title: "Why this website?",
-    description: (
-      <>
-        I built this with Docusaurus because I was simply too lazy to build
-        something more fancy.
-      </>
+    title: "Selected work",
+    body: (
+      <ul className={styles.list}>
+        <li>
+          <a
+            href="https://github.com/facebook/react-native/pulls?q=author%3Amateoguzmana"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            facebook/react-native
+          </a>
+          {" "}— core contributor (Image caching, Kotlin migration, smaller things)
+        </li>
+        <li>
+          <a
+            href="https://github.com/mateoguzmana/react-native-lz4"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            react-native-lz4
+          </a>
+          {" "}— C++ compression bindings via JSI
+        </li>
+        <li>
+          <a
+            href="https://mateoguzmana.github.io/react-native-fiesta/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            react-native-fiesta
+          </a>
+          {" "}— celebration animations on Skia
+        </li>
+        <li>
+          <Link to="/blog/cutting-react-native-bundle-size">
+            Cutting ~7 MB off a React Native bundle
+          </Link>
+          {" "}— deep dive
+        </li>
+        <li>
+          <a
+            href="https://xplorerapp.net/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Xplorer
+          </a>
+          {" "}— planetary-exploration app with AI-generated textures
+        </li>
+      </ul>
     ),
   },
   {
-    title: "Contact Me",
-    description: (
+    title: "Get in touch",
+    body: (
       <>
-        Drop a message on my{" "}
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          href="https://x.com/MateoGuzmanA"
-        >
-          X
-        </a>
-        {", or reach out to "}
-        <a href="mailto:info@mateoguzmana.net">info@mateoguzmana.net</a>.
+        <p className={styles.contactLead}>
+          If anything here resonates — a problem you're stuck on, a topic
+          you'd like to compare notes on — feel free to drop a line.
+        </p>
+        <ul className={styles.contactList}>
+          <li>
+            <a href="mailto:info@mateoguzmana.net">
+              info@mateoguzmana.net
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://x.com/MateoGuzmanA"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              @MateoGuzmanA on X
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://stackoverflow.com/users/5415299/mateo-guzm%c3%a1n"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Stack Overflow
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://github.com/mateoguzmana"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              github.com/mateoguzmana
+            </a>
+          </li>
+        </ul>
       </>
     ),
   },
 ];
 
-function Feature({ title, description }: FeatureItem) {
+function Feature({ title, body }: FeatureItem) {
   return (
-    <div className={clsx("col col--4")}>
-      <div className="text--center padding-horiz--md">
-        <h3>{title}</h3>
-        <p>{description}</p>
-      </div>
+    <div className={clsx("col col--4", styles.col)}>
+      <article className={styles.card}>
+        <h2 className={styles.cardTitle}>{title}</h2>
+        <div className={styles.cardBody}>{body}</div>
+      </article>
     </div>
   );
 }

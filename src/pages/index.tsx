@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import Link from "@docusaurus/Link";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
@@ -7,25 +7,84 @@ import HomepageFeatures from "@site/src/components/HomepageFeatures";
 
 import styles from "./index.module.css";
 
+function ProfileImage() {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // Cached images may finish loading before React attaches `onLoad`,
+  // so we double-check on mount and flip the state if the image is ready.
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth > 0) {
+      setIsLoaded(true);
+    }
+  }, []);
+
+  return (
+    <div className={styles.profileImageWrapper}>
+      <div
+        aria-hidden="true"
+        className={clsx(
+          styles.profileSkeleton,
+          isLoaded && styles.profileSkeletonHidden
+        )}
+      />
+      <img
+        ref={imgRef}
+        src="https://github.com/mateoguzmana.png"
+        alt="Mateo Guzmán"
+        width={220}
+        height={220}
+        loading="eager"
+        decoding="async"
+        onLoad={() => setIsLoaded(true)}
+        onError={() => setIsLoaded(true)}
+        className={clsx(
+          styles.profileImage,
+          isLoaded && styles.profileImageLoaded
+        )}
+      />
+    </div>
+  );
+}
+
 function HomepageHeader() {
   const { siteConfig } = useDocusaurusContext();
   return (
-    <header className={clsx(styles.heroBannerCustom)}>
+    <header className={styles.heroBannerCustom}>
+      <div aria-hidden="true" className={styles.starfield} />
       <div className="container">
         <div className={styles.heroInner}>
           <div className={styles.heroImage}>
-            <img
-              src="https://github.com/mateoguzmana.png"
-              alt="Mateo Guzmán"
-              className={styles.profileImage}
-            />
+            <ProfileImage />
           </div>
           <div className={styles.heroText}>
-            <h1 className="hero__title">{siteConfig.title}</h1>
-            <p className="hero__subtitle">{siteConfig.tagline}</p>
-            <Link className={clsx("button", styles.ctaButton)} to="/docs/intro">
-              <span>👋 Get to know me</span>
-            </Link>
+            <p className={styles.eyebrow}>Mobile engineering · React Native</p>
+            <h1 className={styles.heroTitle}>{siteConfig.title}</h1>
+            <p className={styles.heroRole}>
+              Senior mobile engineer · React Native core contributor
+            </p>
+            <p className={styles.heroPitch}>
+              I work at the edges of React Native — bundle size, native modules,
+              performance, migrations — and write about what I learn along the way.
+            </p>
+            <div className={styles.ctaRow}>
+              <Link
+                className={styles.ctaPrimary}
+                to="/blog/cutting-react-native-bundle-size"
+              >
+                Read the deep dive
+                <span aria-hidden="true" className={styles.ctaArrow}>
+                  →
+                </span>
+              </Link>
+              <a
+                className={styles.ctaSecondary}
+                href="mailto:info@mateoguzmana.net"
+              >
+                Get in touch
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -36,7 +95,10 @@ function HomepageHeader() {
 export default function Home(): JSX.Element {
   const { siteConfig } = useDocusaurusContext();
   return (
-    <Layout title={`Welcome`} description="Mateo Guzmán personal site <head />">
+    <Layout
+      title="Mateo Guzmán — React Native consultant"
+      description={siteConfig.tagline}
+    >
       <HomepageHeader />
       <main>
         <HomepageFeatures />
