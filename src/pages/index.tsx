@@ -1,5 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
-import clsx from "clsx";
+import React from "react";
 import Link from "@docusaurus/Link";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import Layout from "@theme/Layout";
@@ -8,41 +7,17 @@ import HomepageFeatures from "@site/src/components/HomepageFeatures";
 import styles from "./index.module.css";
 
 function ProfileImage() {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
-
-  // Cached images may finish loading before React attaches `onLoad`,
-  // so we double-check on mount and flip the state if the image is ready.
-  useEffect(() => {
-    const img = imgRef.current;
-    if (img && img.complete && img.naturalWidth > 0) {
-      setIsLoaded(true);
-    }
-  }, []);
-
   return (
     <div className={styles.profileImageWrapper}>
-      <div
-        aria-hidden="true"
-        className={clsx(
-          styles.profileSkeleton,
-          isLoaded && styles.profileSkeletonHidden
-        )}
-      />
+      <div aria-hidden="true" className={styles.profileSkeleton} />
       <img
-        ref={imgRef}
         src="https://github.com/mateoguzmana.png"
         alt="Mateo Guzmán"
         width={220}
         height={220}
         loading="eager"
         decoding="async"
-        onLoad={() => setIsLoaded(true)}
-        onError={() => setIsLoaded(true)}
-        className={clsx(
-          styles.profileImage,
-          isLoaded && styles.profileImageLoaded
-        )}
+        className={styles.profileImage}
       />
     </div>
   );

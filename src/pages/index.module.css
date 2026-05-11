@@ -166,13 +166,15 @@
   max-width: 80vw;
   aspect-ratio: 1 / 1;
   border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 36px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .profileSkeleton {
   position: absolute;
   inset: 0;
-  border-radius: 50%;
-  border: 4px solid rgba(255, 255, 255, 0.92);
   background-color: rgba(255, 255, 255, 0.06);
   background-image: linear-gradient(
     100deg,
@@ -183,29 +185,16 @@
   background-size: 200% 100%;
   background-repeat: no-repeat;
   animation: profileShimmer 1.4s ease-in-out infinite;
-  box-shadow: 0 8px 36px rgba(0, 0, 0, 0.55);
-  transition: opacity 0.35s ease;
   pointer-events: none;
 }
 
-.profileSkeletonHidden {
-  opacity: 0;
-}
-
 .profileImage {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: 50%;
-  border: 4px solid rgba(255, 255, 255, 0.92);
-  box-shadow: 0 8px 36px rgba(0, 0, 0, 0.55);
   object-fit: cover;
-  opacity: 0;
-  transition: opacity 0.35s ease;
-}
-
-.profileImageLoaded {
-  opacity: 1;
 }
 
 @keyframes profileShimmer {
@@ -221,8 +210,6 @@
   .profileSkeleton {
     animation: none;
   }
-  .profileImage,
-  .profileSkeleton,
   .ctaPrimary,
   .ctaSecondary,
   .ctaArrow {
