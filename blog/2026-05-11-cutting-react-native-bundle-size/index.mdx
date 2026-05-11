@@ -1,0 +1,781 @@
+---
+slug: cutting-react-native-bundle-size
+title: Cutting ~7 MB off a React Native JS bundle — five techniques and one negative result
+authors: [mateo]
+tags: [bundle-size, react-native, metro, performance, yarn-resolutions]
+---
+
+Over a few weeks I shipped a series of small PRs that took about **7.3 MB** off the production Android JavaScript bundle of a large React Native app I work on. Roughly **−20%** of what we ship, all measured against the same `main` branch each PR was opened from.
+
+The point of writing this up is partly to share the techniques (none of them are clever, all of them are mostly mechanical), and partly to talk about the one I was sure would land a big number and instead saved 16 KB. That negative result is the most useful one I came out of the workstream with.
+
+Five working techniques in this post, plus the negative result at the end:
+
+| Technique                                          |     Δ raw |  Δ raw % |
+| -------------------------------------------------- | --------: | -------: |
+| Strip debug surfaces (Storybook + a few smaller)   |  ~2.6 MB  |   ~7.2%  |
+| Dedupe transitive packages with Yarn `resolutions` |  ~2.34 MB |   ~6.88% |
+| WebView track (theme-dedupe + extract to asset)    |  ~1.20 MB |   ~3.7%  |
+| `date-fns` locale subpaths instead of the barrel   |   880 KB  |   2.75%  |
+| Fix the heavy import in an upstream package        |   281 KB  |   0.88%  |
+| **Total (working techniques)**                     | **~7.3 MB** | **~20%** |
+| Delete a 118-export icon barrel (negative result)  |    16 KB raw / **+10 KB gz** | — |
+
+If you only read one section, make it the last one. It's a useful corrective to the conventional wisdom about barrels.
+
+## How I measured
+
+Same recipe across every PR. Produce a production Android bundle with Metro, then drop the JS bundle plus its source map into `source-map-explorer`:
+
+```sh
+NODE_ENV=production \
+  yarn react-native bundle --entry-file index.js --platform android \
+    --dev false --minify true \
+    --bundle-output tmp/android.bundle \
+    --sourcemap-output tmp/android.bundle.map
+npx source-map-explorer tmp/android.bundle --no-border-checks --html tmp/treemap.html
+```
+
+`source-map-explorer` produces an HTML treemap of every reachable module in the bundle, grouped by `node_modules` package (with one big bucket for app code). That treemap is the single source of truth for "where are my bytes going" on Hermes-shaped React Native apps. I keep a before/after screenshot for every PR on an `assets/*-reports` orphan branch in the repo, so reviewers can reproduce the comparison without rebuilding.
+
+Two things worth being deliberate about:
+
+- **Raw vs gzipped.** Raw matters because Hermes parses uncompressed bytes on cold start. Gzipped matters because that's what users actually download over the wire (and what code-push patches diff against). They usually move together, but not always, as we'll see in the negative result.
+- **A threshold for "worth it".** I picked 100 KB raw on Android as the floor for a real workstream entry. Below that, the call-site churn typically outweighs the win and the track gets closed.
+
+That's the whole methodology. Everything below is "what showed up in the treemap, and what I did about it."
+
+## 1. Stripping Storybook (and other debug surfaces)
+
+The biggest cut on this app came from stripping Storybook out of production builds. About **−2.33 MB**, roughly **−6.4%** of the JS bundle, in one PR. Once the pattern was in place, I reused it for a QA-tools nav group (−116 KB), an on-device QA overlay tree (−171 KB), and a couple of smaller surfaces. Same recipe every time. Marginal cost of stripping the next surface is around twenty lines.
+
+<figure>
+  <svg viewBox="0 0 640 240" role="img" aria-label="Stripping debug surfaces: about 2.6 MB of Storybook and QA-only modules drop out of the production JavaScript bundle.">
+    <text x="20" y="16" fill="currentColor" fontSize="12" fontWeight="600">Before · prod bundle (no strip)</text>
+    <rect x="20" y="26" width="260" height="200" rx="6" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+    <rect x="30" y="36" width="240" height="50" fill="rgba(127,127,127,0.12)" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5"/>
+    <text x="40" y="56" fill="currentColor" fontSize="10" opacity="0.65">app code</text>
+    <rect x="30" y="90" width="115" height="62" fill="rgba(127,127,127,0.12)" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5"/>
+    <rect x="149" y="90" width="121" height="62" fill="rgba(127,127,127,0.12)" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5"/>
+    <text x="40" y="110" fill="currentColor" fontSize="10" opacity="0.65">node_modules</text>
+    <rect x="30" y="156" width="240" height="60" fill="rgba(239,68,68,0.18)" stroke="rgba(239,68,68,0.85)" strokeWidth="1.2"/>
+    <text x="40" y="175" fill="currentColor" fontSize="11" fontWeight="600">Debug surfaces</text>
+    <text x="40" y="191" fill="currentColor" fontSize="10" opacity="0.7">Storybook · QA tools · overlays</text>
+    <text x="40" y="207" fill="currentColor" fontSize="10" opacity="0.7">~2.6 MB · ~7.2%</text>
+    <line x1="295" y1="126" x2="345" y2="126" stroke="currentColor" strokeWidth="1.5"/>
+    <polyline points="335,116 345,126 335,136" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+    <text x="360" y="16" fill="currentColor" fontSize="12" fontWeight="600">After · prod-prod bundle</text>
+    <rect x="360" y="26" width="200" height="200" rx="6" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+    <rect x="370" y="36" width="180" height="76" fill="rgba(127,127,127,0.12)" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5"/>
+    <text x="380" y="58" fill="currentColor" fontSize="10" opacity="0.65">app code</text>
+    <rect x="370" y="116" width="86" height="100" fill="rgba(127,127,127,0.12)" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5"/>
+    <rect x="460" y="116" width="90" height="100" fill="rgba(127,127,127,0.12)" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5"/>
+    <text x="380" y="138" fill="currentColor" fontSize="10" opacity="0.65">node_modules</text>
+    <text x="370" y="223" fill="currentColor" fontSize="10" opacity="0.55" fontStyle="italic">debug aliased to no-op stubs</text>
+  </svg>
+  <figcaption>Conceptual sketch. The Babel <code>module-resolver</code> alias swaps the debug surfaces for one-line stubs in prod-prod builds, so Metro never reaches the Storybook subtree.</figcaption>
+</figure>
+
+### The `__DEV__` trap
+
+Most React Native apps end up with a few surfaces that shouldn't ship to end users but absolutely have to ship to internal release-channel builds: Storybook for designers, a QA-tools tab for testers, debug overlays. The usual advice is to gate them on `__DEV__`. That works for the dev/release split. It doesn't work for the prod-prod versus release-with-QA-tools split, which is the case I have to support.
+
+Typical code:
+
+```tsx
+// AppRouter.tsx
+{(__DEV__ || IS_QA_TOOLS_ENABLED) && (
+  <Stack.Screen name="Storybook" component={Storybook} />
+)}
+```
+
+Two values, two completely different behaviours:
+
+- `__DEV__` is a Babel-time constant. Metro replaces it with `true` or `false` during transform, so the branch really does drop out of release bundles.
+- `IS_QA_TOOLS_ENABLED` comes from `react-native-config`, which reads `.env` at runtime through the native side. Metro can't statically resolve it at bundle time, so the conditional looks dynamic to the bundler, the branch stays reachable, and the `import { Storybook }` at the top of `AppRouter.tsx` is a live edge in the module graph.
+
+That live edge is enough to keep Storybook and everything it transitively pulls in (`@storybook/react-native`, the Storybook runtime, every `*.stories.*`) in the production bundle. About 1.8 MB of compressed JS behind a flag that's never going to be true in prod.
+
+### The fix: a Babel alias plus `dotenv`
+
+What I actually want is a gate that resolves at bundle time, flipped per build type from CI. `__DEV__` can't be it, so I add a separate, build-time-only env var read in `babel.config.js`:
+
+```js
+// babel.config.js
+require('dotenv').config({ quiet: true });
+
+module.exports = api => {
+  const babelEnv = api.env();
+  const isDev = babelEnv === 'development';
+  const isTest = babelEnv === 'test';
+
+  const isQAToolsEnabled =
+    isDev || isTest || process.env.QA_TOOLS_ENABLED === 'true';
+
+  return {
+    presets: ['module:@react-native/babel-preset'],
+    overrides: [
+      {
+        exclude: /node_modules/,
+        plugins: [
+          [
+            'module-resolver',
+            {
+              root: ['./src'],
+              alias: {
+                ...(isQAToolsEnabled
+                  ? {}
+                  : {
+                      '~/pages/Storybook/Storybook':
+                        './src/pages/Storybook/Storybook.stub.tsx',
+                      '~/routing/groups/QAToolsGroup/QAToolsGroup':
+                        './src/routing/groups/QAToolsGroup/QAToolsGroup.stub.tsx',
+                      '~/components/debug/DebugOverlay/DebugOverlay':
+                        './src/components/debug/DebugOverlay/DebugOverlay.stub.tsx',
+                    }),
+                '~': './src',
+              },
+            },
+          ],
+        ],
+      },
+    ],
+  };
+};
+```
+
+And one tiny stub per surface:
+
+```tsx
+// src/pages/Storybook/Storybook.stub.tsx
+import { FC } from 'react';
+export const Storybook: FC = () => null;
+```
+
+A few things that took some iteration to land right:
+
+- **`dotenv` at the top of `babel.config.js`.** `react-native-config` only reads `.env` on the native side. Metro and Babel never see those values unless something puts them into `process.env` first. The two-line `require('dotenv').config()` does that. CI flips `.env` files (`yarn envs:prod` vs `yarn envs:prod:qa`), so the build type is fully determined by which `.env` is in place.
+- **First-match wins in `babel-plugin-module-resolver`.** Specific aliases (`~/pages/Storybook/Storybook`) have to come before the prefix alias (`~`), or the prefix wins and the stub is never picked up. The conditional spread puts them in the right position.
+- **Match the export shape exactly.** Named exports must match. Default exports must default-export. Nothing changes at the call site, only the resolution target.
+
+`knip` (or any dead-code tool) will flag the stub as unreachable, because nothing imports it by path. Add the stub paths to `.knip.json`'s `ignore` list.
+
+### Verify both flag states
+
+`React.lazy` and similar "defer it" patterns can give you a similar startup-time win without removing anything from the shipped bundle. The whole point of this technique is to ship fewer bytes, so the measurement has to confirm that. I always build both flag states and run them through `source-map-explorer`:
+
+```sh
+QA_TOOLS_ENABLED=false NODE_ENV=production yarn react-native bundle ... # prod-prod
+QA_TOOLS_ENABLED=true  NODE_ENV=production yarn react-native bundle ... # prod-with-qa
+```
+
+In the first treemap, Storybook is gone. In the second, it's back. If you only build one of them, you haven't actually verified that flipping the flag restores the original behaviour, and it's easy to mis-spell the alias key and silently strip nothing while the bundle gets smaller for some unrelated reason.
+
+### Numbers
+
+| Surface stripped       |    Δ raw |  Δ raw % |
+| ---------------------- | -------: | -------: |
+| Storybook              | −2.33 MB |   −6.4%  |
+| QA-tools nav group     |  −116 KB |   −0.31% |
+| QA-tools overlay tree  |  −171 KB |   −0.52% |
+| **Total**              | **~2.6 MB** | **~7.2%** |
+
+## 2. Deduping packages with Yarn `resolutions`
+
+The second-largest cut on this app didn't come from removing anything I wrote. It came from telling the package manager to stop installing the same library twice. About **−2.34 MB** off the JS bundle, **−6.88%**, with a six-line change in `package.json`.
+
+<figure>
+  <svg viewBox="0 0 640 240" role="img" aria-label="Yarn resolutions: two near-identical versions of an external SDK family in the bundle collapse into one.">
+    <text x="20" y="16" fill="currentColor" fontSize="12" fontWeight="600">Before · two co-resolved versions</text>
+    <rect x="20" y="26" width="260" height="200" rx="6" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+    <rect x="30" y="50" width="115" height="160" fill="rgba(239,68,68,0.18)" stroke="rgba(239,68,68,0.85)" strokeWidth="1.2"/>
+    <text x="40" y="72" fill="currentColor" fontSize="11" fontWeight="600">@wallet-provider/*</text>
+    <text x="40" y="88" fill="currentColor" fontSize="10" opacity="0.7">v2.17.x</text>
+    <text x="40" y="200" fill="currentColor" fontSize="10" opacity="0.7">≈ same code</text>
+    <rect x="149" y="50" width="121" height="160" fill="rgba(239,68,68,0.18)" stroke="rgba(239,68,68,0.85)" strokeWidth="1.2"/>
+    <text x="159" y="72" fill="currentColor" fontSize="11" fontWeight="600">@wallet-provider/*</text>
+    <text x="159" y="88" fill="currentColor" fontSize="10" opacity="0.7">v2.21.x</text>
+    <text x="159" y="200" fill="currentColor" fontSize="10" opacity="0.7">≈ same code</text>
+    <line x1="295" y1="126" x2="345" y2="126" stroke="currentColor" strokeWidth="1.5"/>
+    <polyline points="335,116 345,126 335,136" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+    <text x="360" y="16" fill="currentColor" fontSize="12" fontWeight="600">After · one version, pinned</text>
+    <rect x="360" y="26" width="200" height="200" rx="6" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+    <rect x="370" y="50" width="180" height="160" fill="rgba(34,197,94,0.18)" stroke="rgba(34,197,94,0.85)" strokeWidth="1.2"/>
+    <text x="380" y="72" fill="currentColor" fontSize="11" fontWeight="600">@wallet-provider/*</text>
+    <text x="380" y="88" fill="currentColor" fontSize="10" opacity="0.7">v2.23.9 (resolutions)</text>
+    <text x="380" y="200" fill="currentColor" fontSize="10" opacity="0.7">−2.34 MB · −6.88%</text>
+  </svg>
+  <figcaption>Conceptual sketch. The <code>resolutions</code> field forces every transitive importer to use one version of each package, so Metro packages one copy and Hermes parses it once.</figcaption>
+</figure>
+
+### The smell: a treemap with too many of the same thing
+
+On the treemap, one external SDK family was the obvious shape: `@wallet-provider/utils`, `@wallet-provider/core`, `@wallet-provider/sign-client`, `@wallet-provider/types`, `@wallet-provider/universal-provider` all showed up *twice each*, at two slightly different version numbers, with near-identical sizes. Same story for a chain SDK (`@some-chain/web3-sdk`). A `yarn why` confirmed it:
+
+```sh
+$ yarn why @wallet-provider/utils
+# → @wallet-provider/utils@npm:2.21.x   (hoisted, used directly)
+# → @wallet-provider/utils@npm:2.17.x   (pulled in by another upstream SDK)
+```
+
+Two different transitive consumers were each pinning a slightly different minor of the same family of packages. Yarn played it safe and co-resolved both versions. Metro followed the import edges and packaged both copies of every shared file. Hermes parsed both copies on cold start. None of the runtime ever simultaneously needs both — they're the same code, just at different patch versions.
+
+This is the most underrated pattern in Node-shaped bundlers. The bundle isn't bloated because anything is *big*. It's bloated because the same big thing is shipped twice (or three times, or four).
+
+### The fix: a `resolutions` block
+
+Yarn's `resolutions` field forces every transitive consumer in the workspace to use a single version, regardless of what their `peerDependencies` say. For this app it ended up looking roughly like this:
+
+```json
+// package.json
+"resolutions": {
+  "@some-chain/web3-sdk": "1.98.4",
+  "@wallet-provider/core": "2.23.9",
+  "@wallet-provider/sign-client": "2.23.9",
+  "@wallet-provider/types": "2.23.9",
+  "@wallet-provider/universal-provider": "2.23.9",
+  "@wallet-provider/utils": "2.23.9"
+}
+```
+
+After `yarn install`, every transitive import of those packages resolves to exactly one copy. Metro sees one. Hermes parses one. The treemap collapses each family from a wide bar to a single block.
+
+`yarn dedupe --check` is the canonical follow-up. It walks the lockfile and flags any package that still has more than one version installed across the graph. I run it in CI alongside the bundle size check, so any new transitive that drags in a duplicate fails the PR until it's pinned or upgraded out.
+
+### What this technique is not
+
+`resolutions` is a *bundle-time* knob. It's the right tool when:
+
+- Two consumers want different patch or minor versions of the same package.
+- The package is large and lives in the JS bundle (not in native code).
+- The versions are compatible enough that pinning one of them is safe.
+
+It's not a substitute for upgrading. If two consumers genuinely depend on incompatible *major* versions, forcing them onto one will break one of them at runtime. The only way to know is to smoke-test every pinned package through the real code path that uses it.
+
+That smoke test isn't optional. I picked the most-trafficked screen for each pinned package family — the actual wallet-provider flow for the `@wallet-provider/*` packages, the actual chain transaction path for `@some-chain/web3-sdk` — and ran the full happy path through QA on both platforms before merging. Pin alone, no smoke, no merge.
+
+### Trade-offs
+
+Every line in the `resolutions` block is a tiny technical debt:
+
+- It pins a transitive version your direct dependencies didn't ask for, so it bypasses their own peer-dependency drift signal. If they bump a peer, you won't see the warning until you remove the pin.
+- It's invisible to most newcomers reading `package.json`. I keep an inline comment above each pin explaining *why* it exists and the link to the PR that introduced it.
+- It needs to be retired when the upstream consumers catch up. The same `yarn why` that motivated the pin is the test for whether the pin is still needed: if every transitive now wants the same version anyway, the pin is dead weight.
+
+For this app, the trade-offs were obviously worth it: 2.34 MB of bundle, kept off the cold-start parse for every user, against six lines and one inline comment per line.
+
+## 3. Locale subpaths instead of a barrel
+
+The third-largest cut was almost embarrassing in how small the actual change was. A two-line edit dropped **880 KB** off the bundle, around **−2.75%**.
+
+<figure>
+  <svg viewBox="0 0 640 240" role="img" aria-label="date-fns locale subpaths: the bundle drops from roughly 97 locales to just the six the app actually uses.">
+    <defs>
+      <pattern id="loc-pat" x="0" y="0" width="29" height="26" patternUnits="userSpaceOnUse">
+        <rect x="1" y="1" width="27" height="24" rx="2" fill="rgba(239,68,68,0.18)" stroke="rgba(239,68,68,0.85)" strokeWidth="0.7"/>
+      </pattern>
+    </defs>
+    <text x="20" y="16" fill="currentColor" fontSize="12" fontWeight="600">Before · ~97 locales reachable</text>
+    <rect x="20" y="26" width="260" height="200" rx="6" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+    <rect x="30" y="40" width="232" height="180" fill="url(#loc-pat)"/>
+    <line x1="295" y1="126" x2="345" y2="126" stroke="currentColor" strokeWidth="1.5"/>
+    <polyline points="335,116 345,126 335,136" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+    <text x="360" y="16" fill="currentColor" fontSize="12" fontWeight="600">After · 6 locales reachable</text>
+    <rect x="360" y="26" width="260" height="200" rx="6" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+    <rect x="370" y="50" width="78" height="60" rx="3" fill="rgba(34,197,94,0.18)" stroke="rgba(34,197,94,0.85)" strokeWidth="1"/>
+    <text x="409" y="86" fill="currentColor" fontSize="12" fontWeight="600" textAnchor="middle">de</text>
+    <rect x="453" y="50" width="78" height="60" rx="3" fill="rgba(34,197,94,0.18)" stroke="rgba(34,197,94,0.85)" strokeWidth="1"/>
+    <text x="492" y="86" fill="currentColor" fontSize="12" fontWeight="600" textAnchor="middle">en-GB</text>
+    <rect x="536" y="50" width="78" height="60" rx="3" fill="rgba(34,197,94,0.18)" stroke="rgba(34,197,94,0.85)" strokeWidth="1"/>
+    <text x="575" y="86" fill="currentColor" fontSize="12" fontWeight="600" textAnchor="middle">es</text>
+    <rect x="370" y="115" width="78" height="60" rx="3" fill="rgba(34,197,94,0.18)" stroke="rgba(34,197,94,0.85)" strokeWidth="1"/>
+    <text x="409" y="151" fill="currentColor" fontSize="12" fontWeight="600" textAnchor="middle">fr</text>
+    <rect x="453" y="115" width="78" height="60" rx="3" fill="rgba(34,197,94,0.18)" stroke="rgba(34,197,94,0.85)" strokeWidth="1"/>
+    <text x="492" y="151" fill="currentColor" fontSize="12" fontWeight="600" textAnchor="middle">it</text>
+    <rect x="536" y="115" width="78" height="60" rx="3" fill="rgba(34,197,94,0.18)" stroke="rgba(34,197,94,0.85)" strokeWidth="1"/>
+    <text x="575" y="151" fill="currentColor" fontSize="12" fontWeight="600" textAnchor="middle">nl</text>
+    <text x="370" y="200" fill="currentColor" fontSize="10" opacity="0.7">−880 KB · −2.75%</text>
+  </svg>
+  <figcaption>Conceptual sketch. The barrel statically re-exports every locale subfolder, so any single named import keeps the whole atlas in the graph. Importing each locale by subpath keeps only the six the app uses.</figcaption>
+</figure>
+
+The fix:
+
+```ts
+// Before: one import, ~97 locales packaged
+import { enGB, es, fr, it, de, nl } from 'date-fns/locale';
+
+// After: six imports, six locales packaged
+import { de } from 'date-fns/locale/de';
+import { enGB } from 'date-fns/locale/en-GB';
+import { es } from 'date-fns/locale/es';
+import { fr } from 'date-fns/locale/fr';
+import { it } from 'date-fns/locale/it';
+import { nl } from 'date-fns/locale/nl';
+```
+
+Same six locales. Same call sites. Almost a megabyte stopped shipping to production.
+
+### Why the barrel was so expensive
+
+`date-fns/locale` is a barrel. Its only job is to re-export everything from its sibling folder:
+
+```ts
+// date-fns/locale/index.js (paraphrased)
+export { af } from "./af/index.js";
+export { ar } from "./ar/index.js";
+export { de } from "./de/index.js";
+// ... ~90 more locales ...
+export { zhTW } from "./zh-TW/index.js";
+```
+
+In a perfect tree-shaking world, `import { enGB, es, fr, it, de, nl }` from that barrel would compile down to those six locale folders. In the Metro + Hermes pipeline that ships React Native apps today, it doesn't. Metro evaluates the barrel to satisfy any single named import from it, and the barrel statically references every locale subfolder via top-level `export { ... } from` statements. So every re-export becomes a reachable module in the dependency graph. Metro packages them, Hermes parses them, and your release bundle quietly carries a full atlas of date formatting rules for languages your app doesn't even ship strings for.
+
+The fix is to import each locale from its subpath instead. Each subpath file only exports its one locale and depends on nothing else under `date-fns/locale/`, so Metro packages only what those six lines name. The rest of the locale folder falls out of the graph.
+
+### Lock it in with a lint rule
+
+Once you've done the rewrite, the only thing standing between you and the same regression next quarter is one well-intentioned auto-import. So I added a `no-restricted-imports` rule that bans the barrel outright:
+
+```js
+// oxlint.config.mjs (or .eslintrc.* — same shape)
+{
+  rules: {
+    'no-restricted-imports': ['error', {
+      paths: [
+        {
+          name: 'date-fns/locale',
+          message:
+            'Import specific locales via date-fns/locale/<code> ' +
+            '(e.g. date-fns/locale/en-GB). The barrel pulls in ~97 locales ' +
+            'and bloats prod bundles.',
+        },
+      ],
+    }],
+  },
+}
+```
+
+This is the cheapest part of the fix and easily the most important one. Without it, six months from now a different teammate types `enGB`, their editor auto-imports from the barrel, lint passes, tests pass, and 880 KB quietly walk back in.
+
+### Where else the same shape hides
+
+Once you have a treemap in front of you, this pattern jumps out everywhere. Any time your app does:
+
+```ts
+import { something } from "big-library-with-many-things";
+```
+
+and the library exposes its things through a barrel that statically `export { ... } from`s every sibling, you're probably shipping every sibling. Common offenders, all with the same fix (`import x from 'lib/x'` instead of `import { x } from 'lib'`):
+
+- **Icon sets.** `lucide-react-native`, `react-native-vector-icons/<set>`, `@expo/vector-icons`. Barrels typically map to hundreds or thousands of components.
+- **Locale or i18n data.** Anything with `/locale/`, `/locales/`, `/data/<lang>/` under it.
+- **Utility libraries.** Classic shape: `import { debounce } from 'lodash'` ships all of lodash; `import debounce from 'lodash/debounce'` ships one file.
+- **Charting and viz libs.** Many ship one entry per chart type.
+
+## 4. Two passes over the WebView HTML
+
+The fourth technique came from a slightly weird direction: WebView HTML. Two screens in this app render a charting library inside a `<WebView />`, and the cost of how we were doing that ended up being the third-biggest workstream entry — but it took two passes over the same code path to get most of the way there.
+
+Combined across the two passes: about **−1.2 MB**, around **−3.7%** of the bundle.
+
+<figure>
+  <svg viewBox="0 0 640 260" role="img" aria-label="WebView HTML moves out of the JavaScript bundle into native assets.">
+    <text x="20" y="16" fill="currentColor" fontSize="12" fontWeight="600">Before · HTML embedded in JS bundle</text>
+    <rect x="20" y="26" width="260" height="220" rx="6" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+    <text x="32" y="44" fill="currentColor" fontSize="10" opacity="0.65">JS bundle</text>
+    <rect x="30" y="52" width="240" height="50" fill="rgba(127,127,127,0.12)" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5"/>
+    <text x="40" y="74" fill="currentColor" fontSize="10" opacity="0.65">app code, node_modules, etc.</text>
+    <rect x="30" y="108" width="240" height="60" fill="rgba(239,68,68,0.18)" stroke="rgba(239,68,68,0.85)" strokeWidth="1.2"/>
+    <text x="40" y="128" fill="currentColor" fontSize="11" fontWeight="600">WebView HTML #1</text>
+    <text x="40" y="144" fill="currentColor" fontSize="10" opacity="0.7">dark + light variants · ~640 KB</text>
+    <rect x="30" y="174" width="240" height="60" fill="rgba(239,68,68,0.18)" stroke="rgba(239,68,68,0.85)" strokeWidth="1.2"/>
+    <text x="40" y="194" fill="currentColor" fontSize="11" fontWeight="600">WebView HTML #2</text>
+    <text x="40" y="210" fill="currentColor" fontSize="10" opacity="0.7">~344 KB · embedded string</text>
+    <line x1="295" y1="138" x2="345" y2="138" stroke="currentColor" strokeWidth="1.5"/>
+    <polyline points="335,128 345,138 335,148" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+    <text x="360" y="16" fill="currentColor" fontSize="12" fontWeight="600">After · HTML lives next to the app, not in it</text>
+    <rect x="360" y="26" width="125" height="220" rx="6" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+    <text x="370" y="44" fill="currentColor" fontSize="10" opacity="0.65">JS bundle</text>
+    <rect x="368" y="52" width="110" height="100" fill="rgba(127,127,127,0.12)" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5"/>
+    <text x="378" y="74" fill="currentColor" fontSize="10" opacity="0.65">app code, etc.</text>
+    <text x="378" y="172" fill="currentColor" fontSize="10" opacity="0.6" fontStyle="italic">just URI strings</text>
+    <text x="378" y="186" fill="currentColor" fontSize="10" opacity="0.6" fontStyle="italic">for the WebViews</text>
+    <rect x="500" y="26" width="120" height="220" rx="6" fill="none" stroke="rgba(59,130,246,0.85)" strokeWidth="1.5" strokeDasharray="4 3"/>
+    <text x="510" y="44" fill="currentColor" fontSize="10" opacity="0.65">Native assets</text>
+    <rect x="508" y="52" width="104" height="80" fill="rgba(59,130,246,0.18)" stroke="rgba(59,130,246,0.85)" strokeWidth="1.2"/>
+    <text x="518" y="74" fill="currentColor" fontSize="10" fontWeight="600">.generated.html</text>
+    <text x="518" y="90" fill="currentColor" fontSize="10" opacity="0.7">~408 KB</text>
+    <rect x="508" y="142" width="104" height="80" fill="rgba(59,130,246,0.18)" stroke="rgba(59,130,246,0.85)" strokeWidth="1.2"/>
+    <text x="518" y="164" fill="currentColor" fontSize="10" fontWeight="600">.generated.html</text>
+    <text x="518" y="180" fill="currentColor" fontSize="10" opacity="0.7">~330 KB</text>
+  </svg>
+  <figcaption>Conceptual sketch. Step 1 collapses the dark/light theme variants into one HTML per WebView. Step 2 moves the (now single) HTML out of the JS bundle and into the platform's native asset registry, so Hermes never parses it.</figcaption>
+</figure>
+
+### Background: how `react-native-react-bridge` ships HTML
+
+The standard `react-native-react-bridge` setup for one of these screens looks roughly like this:
+
+```tsx
+// SomeChartWebView.tsx
+import { webViewCreateRoot } from 'react-native-react-bridge/lib/web';
+
+export default webViewCreateRoot(<SomeChartRoot />);
+```
+
+```tsx
+// Presenter.tsx
+import html from './SomeChartWebView';
+
+<WebView source={{ html }} />;
+```
+
+What `webViewCreateRoot` actually does at compile time is bundle the web-side React tree with esbuild, inline every asset (CSS, fonts, SVGs, WASM) as base64 into the JS, and replace the default export with one giant HTML string literal.
+
+That string ends up living in two places:
+
+1. **Inside the JS bundle.** Metro embeds it in `index.android.bundle`. Hermes parses and byte-compiles it on cold start before any of your code runs.
+2. **Across the bridge.** Every time the screen mounts, the same string is serialised and copied into the native WebView via `source={{ html }}`.
+
+That's the cost surface both passes attack, from different angles.
+
+### Step 1: Collapse the dark and light theme variants into one (−427 KB)
+
+The first pass came from staring at the treemap and noticing something obvious in hindsight: the chart screen wasn't shipping one HTML blob, it was shipping **two**, named something like `ChartWebView.dark` and `ChartWebView.light`. Two `webViewCreateRoot()` calls, two near-identical compiled HTML strings, around 213 KB each. Both shipped in every prod bundle. The runtime picked one based on the user's current theme.
+
+The two React trees were structurally identical. The only thing that differed was a theme variable threaded through the styles. So step 1 was: render one component, pass the active theme in instead.
+
+`react-native-react-bridge` already has the right hook for this. The native side can send the WebView a `LOAD_CONFIG` message right after the WebView's "ready" signal, and the web tree reads that config before mounting its real UI. So the dark/light bit just became one more field in `LOAD_CONFIG`:
+
+```ts
+// presenter (simplified before)
+const html = mode === 'dark' ? darkChartWebViewHtml : lightChartWebViewHtml;
+return <WebView source={{ html }} />;
+
+// presenter (after)
+return (
+  <WebView
+    key={`chart-webview-${mode}`}
+    source={{ html: chartWebViewHtml }}
+    onMessage={onWebViewReady}
+  />
+);
+
+// onWebViewReady (after)
+webviewRef.current?.postMessage(
+  JSON.stringify({ type: 'LOAD_CONFIG', config: { mode } })
+);
+```
+
+One subtle thing that bit me before it stopped biting me: the WebView needs to fully remount when the theme changes, not just receive a new `LOAD_CONFIG`. Otherwise the chart library renders some styles before `LOAD_CONFIG` arrives, and you end up with a half-themed first paint. Keying the element on `mode` (`key={`chart-webview-${mode}`}`) is the cheapest way to force the remount. React unmounts the old WebView, the new one starts fresh, and the very first paint reads the right theme.
+
+After deleting the second `webViewCreateRoot()` call and removing the dark/light branch in the presenter, the JS bundle dropped by **−427 KB** in a single PR. No new pipeline, no native changes — just one of the two HTML strings stopped being generated.
+
+This is the move I'd pull first on any RN app that uses `react-native-react-bridge`: count the `webViewCreateRoot()` call sites for each screen. If you have more than one for what's morally the same screen, you're paying for it twice.
+
+### Step 2: Move the (now single) HTML out of the JS bundle (−770 KB across two screens)
+
+With the theme variants collapsed, each of the two chart screens still shipped one ~400 KB HTML string inside the JS bundle. That's the cost surface the second pass attacks. Hermes still parses those strings on cold start before any of your code runs, and the bridge still copies them on every mount, and nothing else in the JS ever looks at them.
+
+#### What I wanted instead
+
+The same HTML, but somewhere Metro treats as an asset and Hermes never touches:
+
+- **iOS:** ship it through Metro's asset registry, the same way a PNG would go. `Image.resolveAssetSource(require('./...generated.html'))` returns a `file://...App.app/...` URL the WebView can load.
+- **Android:** copy it into `android/app/src/main/assets/` and load it via `file:///android_asset/<name>.generated.html`. That's the one documented file-URL scheme Chromium WebView still accepts for in-APK files. (`Image.resolveAssetSource` for non-image assets on Android returns a bare resource ID with no scheme, which the WebView can't load, so the iOS approach doesn't transfer.)
+- **JS bundle:** knows about a tiny URI string and nothing else.
+
+#### The pre-build pipeline
+
+I keep one manifest file that lists which web entries to bundle:
+
+```ts
+// src/scripts/pre-build/webview-manifest.ts
+export const ANDROID_WEBVIEW_ASSETS_DIR = 'android/app/src/main/assets';
+
+export const WEBVIEW_MANIFEST = [
+  {
+    entry: 'modules/charts/SomeChartWebView.web-entry.tsx',
+    outDir: 'modules/charts',
+    generatedFileName: 'SomeChartWebView.generated.html',
+  },
+] as const;
+```
+
+Each entry points at a `*.web-entry.tsx` file that calls `webViewCreateRoot(...)` on the React tree the WebView used to render. The pre-build script runs esbuild over every entry, wraps the output in the same HTML shell `react-native-react-bridge` would have produced at transform time, and writes the result to two places: colocated next to the source (iOS uses this via `require()`), and in `android/app/src/main/assets/` (Android uses this directly).
+
+```ts
+const bundled = await build({
+  entryPoints: [entryFile],
+  bundle: true,
+  minify: true,
+  write: false,
+  jsx: 'automatic',
+  plugins: [rnrbAssetLoaders],
+});
+return wrapWithWebViewHTML(`(function(){${bundled.outputFiles[0].text}})()`);
+```
+
+`rnrbAssetLoaders` re-implements the same asset loaders the runtime transformer in `react-native-react-bridge` provides (text, CSS, base64 images, WASM). Keeping that list in sync with the upstream plugin is what makes the output byte-identical to the inlined version.
+
+#### Metro, and the platform resolvers
+
+One line in `metro.config.js` makes `require('./...generated.html')` resolve as a native asset instead of a JS source file:
+
+```js
+module.exports = {
+  resolver: {
+    ...resolver,
+    assetExts: [...resolver.assetExts, 'html'],
+  },
+};
+```
+
+And one sibling file per platform tells the presenter where the asset lives:
+
+```ts
+// SomeChartWebView.source.ios.ts
+import { Image } from 'react-native';
+
+export const SomeChartWebViewSourceUri: string =
+  Image.resolveAssetSource(require('./SomeChartWebView.generated.html'))?.uri ?? '';
+```
+
+```ts
+// SomeChartWebView.source.android.ts
+export const SomeChartWebViewSourceUri =
+  'file:///android_asset/SomeChartWebView.generated.html';
+```
+
+The Android file deliberately doesn't `require()` the colocated HTML. If it did, Metro would re-bundle the same HTML into `res/raw/` on Android, where nothing consumes it, and the APK would carry the file twice.
+
+The presenter then swaps `source={{ html: InlineHtml }}` for `source={{ uri: SomeChartWebViewSourceUri }}`. On Android you also need to flip `allowFileAccess` and `allowFileAccessFromFileURLs` to `true` so the `file:///android_asset/...` URL actually loads.
+
+#### CI check: don't ship stale HTML
+
+The "developer edits the source, remembers to commit the regenerated HTML" arrangement breaks the moment one person forgets. So there's a sibling script that rebuilds every entry in memory and byte-diffs against both committed copies. If anyone touches a `*.web-entry.tsx` without committing the regenerated HTML, CI fails fast with a clean message. That's the whole verifier.
+
+### Numbers
+
+| PR                                         |          Δ raw |  Δ raw % |
+| ------------------------------------------ | -------------: | -------: |
+| Step 1: collapse dark/light theme variants |        −427 KB |   −1.32% |
+| Step 2: first WebView to native asset      |        −424 KB |   −1.38% |
+| Step 2: second WebView to native asset     |        −344 KB |   −1.16% |
+| **Combined**                               | **~−1.2 MB**   | **~−3.7%** |
+
+The `*.generated.html` files (~408 KB and ~330 KB) now live in the APK's native assets folder. `aapt` compresses those, so the APK delta is roughly neutral. The win is the JS bundle, plus the bridge work that no longer happens per mount, plus one fewer HTML blob to maintain.
+
+## 5. Sometimes the fix is upstream
+
+Most of the cuts so far happen inside the app. This one didn't — the actual fix landed in a separate package my team also maintains, that the app depends on transitively. Worth its own section because the *shape* of the problem and the only-valid-fix is genuinely different from "edit the app."
+
+<figure>
+  <svg viewBox="0 0 640 260" role="img" aria-label="Upstream package fix: a require effect barrel becomes per-submodule imports, dropping the unused effect submodules from the JS bundle.">
+    <text x="20" y="16" fill="currentColor" fontSize="12" fontWeight="600">Before · upstream imports the barrel</text>
+    <rect x="20" y="26" width="260" height="220" rx="6" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+    <rect x="30" y="44" width="80" height="50" rx="4" fill="rgba(127,127,127,0.15)" stroke="currentColor" strokeWidth="1"/>
+    <text x="70" y="68" fill="currentColor" fontSize="10" fontWeight="600" textAnchor="middle">upstream</text>
+    <text x="70" y="82" fill="currentColor" fontSize="9" opacity="0.75" textAnchor="middle">package</text>
+    <line x1="112" y1="69" x2="153" y2="69" stroke="currentColor" strokeWidth="1.2"/>
+    <polyline points="146,64 153,69 146,74" fill="none" stroke="currentColor" strokeWidth="1.2"/>
+    <text x="115" y="60" fill="currentColor" fontSize="9" opacity="0.65" fontStyle="italic">require("effect")</text>
+    <rect x="153" y="44" width="112" height="190" fill="rgba(239,68,68,0.18)" stroke="rgba(239,68,68,0.85)" strokeWidth="1.2"/>
+    <text x="209" y="66" fill="currentColor" fontSize="11" fontWeight="600" textAnchor="middle">effect</text>
+    <text x="209" y="80" fill="currentColor" fontSize="9" opacity="0.7" textAnchor="middle">~100 submodules</text>
+    <text x="209" y="102" fill="currentColor" fontSize="8.5" opacity="0.7" textAnchor="middle">Schema · Either · Option</text>
+    <text x="209" y="117" fill="currentColor" fontSize="8.5" opacity="0.7" textAnchor="middle">Graph · Arbitrary</text>
+    <text x="209" y="132" fill="currentColor" fontSize="8.5" opacity="0.7" textAnchor="middle">STM · STMRef · STMQueue</text>
+    <text x="209" y="147" fill="currentColor" fontSize="8.5" opacity="0.7" textAnchor="middle">Test · TestClock · TestRandom</text>
+    <text x="209" y="162" fill="currentColor" fontSize="8.5" opacity="0.7" textAnchor="middle">Stream · Sink · Channel</text>
+    <text x="209" y="177" fill="currentColor" fontSize="8.5" opacity="0.7" textAnchor="middle">…and ~90 more</text>
+    <line x1="295" y1="138" x2="345" y2="138" stroke="currentColor" strokeWidth="1.5"/>
+    <polyline points="335,128 345,138 335,148" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+    <text x="360" y="16" fill="currentColor" fontSize="12" fontWeight="600">After · per-submodule imports upstream</text>
+    <rect x="360" y="26" width="260" height="220" rx="6" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+    <rect x="370" y="44" width="80" height="50" rx="4" fill="rgba(127,127,127,0.15)" stroke="currentColor" strokeWidth="1"/>
+    <text x="410" y="68" fill="currentColor" fontSize="10" fontWeight="600" textAnchor="middle">upstream</text>
+    <text x="410" y="82" fill="currentColor" fontSize="9" opacity="0.75" textAnchor="middle">package</text>
+    <line x1="452" y1="60" x2="493" y2="60" stroke="currentColor" strokeWidth="1"/>
+    <line x1="452" y1="100" x2="493" y2="100" stroke="currentColor" strokeWidth="1"/>
+    <line x1="452" y1="140" x2="493" y2="140" stroke="currentColor" strokeWidth="1"/>
+    <line x1="452" y1="180" x2="493" y2="180" stroke="currentColor" strokeWidth="1"/>
+    <rect x="493" y="46" width="115" height="28" rx="3" fill="rgba(34,197,94,0.18)" stroke="rgba(34,197,94,0.85)" strokeWidth="1"/>
+    <text x="550" y="65" fill="currentColor" fontSize="10" fontWeight="600" textAnchor="middle">effect/Schema</text>
+    <rect x="493" y="86" width="115" height="28" rx="3" fill="rgba(34,197,94,0.18)" stroke="rgba(34,197,94,0.85)" strokeWidth="1"/>
+    <text x="550" y="105" fill="currentColor" fontSize="10" fontWeight="600" textAnchor="middle">effect/Either</text>
+    <rect x="493" y="126" width="115" height="28" rx="3" fill="rgba(34,197,94,0.18)" stroke="rgba(34,197,94,0.85)" strokeWidth="1"/>
+    <text x="550" y="145" fill="currentColor" fontSize="10" fontWeight="600" textAnchor="middle">effect/Option</text>
+    <rect x="493" y="166" width="115" height="28" rx="3" fill="rgba(127,127,127,0.10)" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5" strokeDasharray="3 2"/>
+    <text x="550" y="185" fill="currentColor" fontSize="10" opacity="0.7" textAnchor="middle">… a few more</text>
+    <text x="370" y="222" fill="currentColor" fontSize="10" opacity="0.7">−281 KB · app PR is just a version bump</text>
+  </svg>
+  <figcaption>Conceptual sketch. The offending barrel <code>require</code> lives in the upstream package's compiled output, so a Babel alias or <code>resolutions</code> pin in the app can't reach it. The actual fix is per-submodule imports in the upstream, released as a patch version.</figcaption>
+</figure>
+
+### The smell, again
+
+Same starting point as every other section: a treemap with something heavier than it should be. In this case, the `effect` library had a much larger footprint than the app's actual usage of it suggested. The app only uses a handful of `effect` submodules — `Schema`, `Either`, `Option`, a couple more. The treemap showed roughly **a hundred** `effect/*` submodules in the bundle: `Graph`, `Arbitrary`, the `STM*` family, the `Test*` family, all the rest. None of them used at runtime, all of them parsed by Hermes on cold start.
+
+A quick `yarn why effect` traced it: nothing in the app code imported `effect` directly. Every reachable edge went through an internal package that does request-routing/state-shaping for the app, also maintained by my team.
+
+Opening that package's compiled output (the thing actually consumed in `node_modules`), the cause was one line:
+
+```js
+// upstream package, compiled output (paraphrased)
+const Effect = require("effect");
+// ... later uses of Effect.Schema, Effect.Either, etc.
+```
+
+`require("effect")` pulls the package's *main* barrel. That barrel statically `export { ... } from`s every submodule. So the moment one consumer touched the package's compiled JS, the entire `effect` library became reachable in the Metro graph, and Hermes parsed all of it.
+
+### Why I couldn't fix this from the app
+
+This is the part that makes the section worth writing. The same offending line, if it had been written in the app's own source, would have been fixable in two minutes with techniques from earlier in the post:
+
+- A `babel-plugin-module-resolver` alias mapping `effect` to a thinner re-export.
+- A `resolutions` pin on `effect` to whichever version exposed a leaner barrel.
+- A direct rewrite of the import to per-submodule paths.
+
+None of those actually work when the bad import lives in *compiled output* shipped by another package, for two reasons:
+
+1. **Babel only sees app source.** It doesn't transform `node_modules` output. The alias would silently no-op.
+2. **`resolutions` pins versions, not import shapes.** The barrel exists in every version of `effect`. Pinning a different `effect` would change what the barrel resolved to, not whether the upstream package required *the barrel*.
+
+You could patch the upstream's compiled file with `yarn patch` or `patch-package`, but you'd be carrying that patch indefinitely, and it would silently rot the next time the upstream package was released. Patching dependencies you also own is a smell — you're saying "the fix exists, but I don't trust myself to land it in the place it should live."
+
+### The actual fix: bump the package
+
+The one-line change went into the upstream package, not the app:
+
+```ts
+// upstream package, source (after)
+import * as Schema from "effect/Schema";
+import * as Either from "effect/Either";
+import * as Option from "effect/Option";
+// ...
+```
+
+Per-submodule imports, no barrel. The upstream package's compiled output now only references the `effect` submodules it actually uses. Tagged a patch version. Bumped the app.
+
+That bump was a two-character diff in `package.json`. The PR description in the app was three lines of body and a link to the upstream release notes. CI on the upstream package validated the change in isolation, so the app's CI didn't have to re-verify anything beyond the bundle size delta.
+
+Result on the app: **−281 KB** off the JS bundle, about **−0.88%**.
+
+### Trade-offs
+
+Cross-repo coordination isn't free. The fix takes:
+
+- A second PR on a second repo, with that repo's own review and release cadence.
+- A version bump in the app, and somebody to remember to do it.
+- Awareness that *the right place* to fix the problem is sometimes upstream of where it shows up.
+
+For this app, the trade-off was obvious because my team owns both repos. The first time you hit this pattern in a package owned by *another* team, the playbook stays the same: open a PR on the upstream with the smallest possible fix, link it from the bundle-size investigation, and bump the dependency once it merges. Worst case, you find out the upstream isn't accepting that change and you fall back to `patch-package` with eyes open about the cost.
+
+The generalisable lesson is the same one I should have had on a bigger sign over my desk: **when you own the upstream, fix it there**. The app PR becomes a one-line version bump that documents itself, the fix is visible to every other consumer of the package, and you stop carrying app-side workarounds that hide the actual smell.
+
+## 6. And one that didn't work: deleting an icon barrel
+
+This is the most useful section of the post, even though the win is roughly zero.
+
+<figure>
+  <svg viewBox="0 0 640 240" role="img" aria-label="Deleting the icons barrel: the JavaScript bundle is essentially the same shape before and after; the gzipped delta is slightly worse.">
+    <text x="20" y="16" fill="currentColor" fontSize="12" fontWeight="600">Before · barrel in place (118 re-exports)</text>
+    <rect x="20" y="26" width="260" height="200" rx="6" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+    <rect x="30" y="40" width="240" height="56" fill="rgba(127,127,127,0.12)" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5"/>
+    <text x="40" y="62" fill="currentColor" fontSize="10" opacity="0.65">app code (270 files import icons via barrel)</text>
+    <rect x="30" y="100" width="115" height="56" fill="rgba(127,127,127,0.12)" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5"/>
+    <rect x="149" y="100" width="121" height="56" fill="rgba(127,127,127,0.12)" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5"/>
+    <text x="40" y="122" fill="currentColor" fontSize="10" opacity="0.65">node_modules</text>
+    <rect x="30" y="160" width="240" height="56" fill="rgba(127,127,127,0.12)" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5"/>
+    <text x="40" y="182" fill="currentColor" fontSize="10" opacity="0.65">icons (118 components, all reachable)</text>
+    <line x1="295" y1="126" x2="345" y2="126" stroke="currentColor" strokeWidth="1.5"/>
+    <polyline points="335,116 345,126 335,136" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+    <text x="360" y="16" fill="currentColor" fontSize="12" fontWeight="600">After · 270 call sites rewritten</text>
+    <rect x="360" y="26" width="260" height="200" rx="6" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+    <rect x="370" y="40" width="240" height="56" fill="rgba(127,127,127,0.12)" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5"/>
+    <text x="380" y="62" fill="currentColor" fontSize="10" opacity="0.65">app code (270 files, longer import paths)</text>
+    <rect x="370" y="100" width="115" height="56" fill="rgba(127,127,127,0.12)" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5"/>
+    <rect x="489" y="100" width="121" height="56" fill="rgba(127,127,127,0.12)" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5"/>
+    <text x="380" y="122" fill="currentColor" fontSize="10" opacity="0.65">node_modules</text>
+    <rect x="370" y="160" width="240" height="56" fill="rgba(127,127,127,0.12)" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5"/>
+    <text x="380" y="182" fill="currentColor" fontSize="10" opacity="0.65">icons (same 118 components)</text>
+    <text x="380" y="208" fill="rgba(239,68,68,0.95)" fontSize="10" fontWeight="600">Δ: −16 KB raw, +10 KB gzipped</text>
+  </svg>
+  <figcaption>Conceptual sketch. Every icon is reachable from at least one call site either way, so removing the barrel only dropped the barrel file itself (~133 bytes of glue). The 270 rewritten call sites have longer import specifiers, which Hermes stores as strings in the bundle.</figcaption>
+</figure>
+
+If you've read anything about bundle size, you've probably been told that barrel files kill tree-shaking and that you should delete every `index.ts` that does `export *`. There's a popular ESLint plugin built around the idea, blog posts, conference talks, an evergreen library-of-the-week.
+
+So I went and tested it. I picked the heaviest single barrel in the codebase: `src/components/icons/index.ts`, 118 re-exports, 270 importing files. I deleted it, rewrote every call site to a direct import (a small codemod did most of the work), and measured. A couple of days of work, in fairness.
+
+Here's the result, measured the same way as every other PR in this workstream:
+
+| Platform     |     Baseline |        After |               Δ raw |              Δ gzip |
+| ------------ | -----------: | -----------: | ------------------: | ------------------: |
+| Android raw  | 34,424,776 B | 34,408,912 B | **−15,864 B (−0.046%)** |                   — |
+| Android gzip |  8,269,128 B |  8,279,086 B |                   — | **+9,958 B (+0.12%)** |
+| iOS raw      | 31,688,006 B | 31,643,450 B | **−44,556 B (−0.14%)** |                   — |
+| iOS gzip     |  7,628,467 B |  7,635,819 B |                   — |  **+7,352 B (+0.10%)** |
+
+About 16 KB raw on Android, and **+10 KB gzipped**. Measurable nothing, in exchange for hundreds of touched files. Below the 100 KB floor I'd set for this workstream. Track closed.
+
+### Why the gzipped number got worse
+
+The shape of the numbers tells the story exactly.
+
+- Module count in the Android graph: **16,391 → 16,390**. Exactly one module dropped, which is the barrel itself.
+- `module_wrapper_glue`: −133 B (the barrel's own glue, gone).
+- `module_dep_id_array`: **+732 B**.
+
+The dep-id array grew because the import specifiers in the 270 call sites are now longer (`~/components/icons/BellIcon` versus `~/components/icons`). Hermes byte-compiles every specifier as a string in the bundle. Longer strings, more bytes. The rewritten file contents also compress slightly worse than the version that had a uniform-shaped barrel import at the top of every file, which is where the +10 KB gzipped delta comes from.
+
+### What the wisdom is actually claiming
+
+The defensible version of "barrels kill tree-shaking" is more careful than the meme:
+
+> Barrels can prevent tree-shaking when the consumer only wants a small subset of the barrel's re-exports, **and the unused re-exports point at modules with non-trivial bodies**.
+
+Both halves matter. A barrel hurts you when it makes the bundler keep otherwise-dead modules in the dependency graph. If all the re-exports point at modules that are used somewhere in the app, even if no single consumer uses all of them, then deleting the barrel changes nothing for the bundler. Every file is still reachable through some edge. The barrel was just an extra hop on the way there.
+
+The icons case is exactly the second shape. Every one of the 118 re-exported icons was imported, directly or indirectly, by at least one screen in the app. The icons set was sized to the app's actual UI surface, not over-built. So the barrel was masking nothing, and deleting it just removed one extra module (the barrel itself) and slightly rearranged the rest.
+
+`date-fns/locale` from the previous section is the *other* shape: package-level barrel, statically re-exporting from third-party modules with self-contained bodies, where the app only uses a small fraction. There, deleting (or rather, bypassing) the barrel saved 880 KB. Same word in the title, completely different consequence.
+
+### A small mental model
+
+The actual question is never "is this a barrel?". The actual question is:
+
+> If I deleted the barrel, would any source files in the dependency graph become unreachable?
+
+If yes (there are sibling modules under the barrel that no other file imports), then the barrel is masking dead code and removing it will save real bytes. Each unreachable module's body falls out of the graph.
+
+If no (every sibling is reachable through some other call site), then the barrel is masking nothing. At best you save the size of the barrel itself, a few hundred bytes for an `export { ... } from` index, a few KB at most for a heavier one. The call-site rewrite costs much more than that.
+
+A treemap plus a couple of well-targeted greps answer this question in an hour. Two hours of that would have saved me several days of call-site rewriting on the icons PR, and the result you see in the table.
+
+## What I'd do again, and what I'd do differently
+
+Cumulative across the five working techniques in this post:
+
+| Technique                                |     Δ raw |  Δ raw % |
+| ---------------------------------------- | --------: | -------: |
+| Strip debug surfaces                     |  ~2.6 MB  |   ~7.2%  |
+| Dedupe via Yarn `resolutions`            |  ~2.34 MB |   ~6.88% |
+| WebView track (theme dedupe + asset)     |  ~1.20 MB |   ~3.7%  |
+| `date-fns` locale subpaths               |   880 KB  |   2.75%  |
+| Fix the upstream package                 |   281 KB  |   0.88%  |
+| **Total (working techniques)**           | **~7.3 MB** | **~20%** |
+| Delete icon barrel                       |    16 KB raw / +10 KB gz | — |
+
+A few things I'd take to the next workstream:
+
+- **Treemap first, intuition second.** Every technique that moved the bundle was scoped from the treemap up, with the expected delta sized before I wrote any code. The one that didn't (the icons barrel) was scoped from the lore down. The treemap is never wrong about what's in the bundle; the lore often is.
+- **Pick a floor and stick to it.** 100 KB raw was the threshold for continuing a track. Anything below that, call-site churn outweighs the win and the track gets closed. Closing tracks early is more valuable than landing them eventually.
+- **Lock wins in with lint rules.** An 880 KB saving with no `no-restricted-imports` rule is an 880 KB saving until the next auto-import.
+- **Verify both states of any toggle.** For any technique that adds a build-time flag (the Babel alias strip, for example), build with the flag on *and* off and look at both treemaps. It's the cheapest way to confirm you didn't quietly strip nothing.
+- **Sometimes the right fix is in the package, not the app.** If a heavy import lives in compiled output from a package you also own, fix it there and bump. The app PR becomes a one-line version bump that documents itself.
+- **Don't trust the meme.** Barrels can cost you a lot or absolutely nothing depending on what's behind them. Measure the barrel, not the meme.
+
+None of these techniques required any clever runtime work. No `React.lazy`, no Hermes flags, no code-splitting tricks. They're all variations on "make Metro stop packaging the bytes you don't need." Which, on a mature React Native app, is usually where the bytes you don't need have been hiding.
