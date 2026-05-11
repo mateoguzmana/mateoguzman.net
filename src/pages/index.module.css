@@ -7,15 +7,15 @@
   background:
     radial-gradient(
       ellipse at 18% 0%,
-      rgba(96, 80, 220, 0.28) 0%,
-      rgba(96, 80, 220, 0) 55%
+      rgba(232, 90, 90, 0.26) 0%,
+      rgba(232, 90, 90, 0) 55%
     ),
     radial-gradient(
       ellipse at 95% 100%,
-      rgba(40, 80, 180, 0.22) 0%,
-      rgba(40, 80, 180, 0) 60%
+      rgba(255, 140, 100, 0.20) 0%,
+      rgba(255, 140, 100, 0) 60%
     ),
-    linear-gradient(180deg, #0a0d1c 0%, #06081a 60%, #05071a 100%);
+    linear-gradient(180deg, #1a0d18 0%, #0a0712 55%, #07060f 100%);
 }
 
 .starfield {
@@ -71,7 +71,7 @@
   letter-spacing: 0.14em;
   font-size: 0.78rem;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.6);
+  color: #f1a0a0;
   margin: 0 0 0.85rem;
 }
 
@@ -109,24 +109,26 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  background: #ffffff;
-  color: #0a0d1c;
+  background: #d9472a;
+  color: #ffffff;
   font-size: 1rem;
   font-weight: 600;
   padding: 0.78rem 1.3rem;
   border-radius: 10px;
   text-decoration: none;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 18px rgba(217, 71, 42, 0.35),
+    0 4px 18px rgba(0, 0, 0, 0.3);
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .ctaPrimary:hover,
 .ctaPrimary:focus-visible {
   text-decoration: none;
-  color: #0a0d1c;
-  background: #f4f4f6;
+  color: #ffffff;
+  background: #e85a3a;
   transform: translateY(-1px);
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 6px 24px rgba(217, 71, 42, 0.5),
+    0 6px 22px rgba(0, 0, 0, 0.35);
 }
 
 .ctaArrow {
@@ -156,8 +158,8 @@
 .ctaSecondary:focus-visible {
   text-decoration: none;
   color: white;
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(217, 71, 42, 0.08);
+  border-color: rgba(217, 71, 42, 0.55);
 }
 
 .profileImageWrapper {
