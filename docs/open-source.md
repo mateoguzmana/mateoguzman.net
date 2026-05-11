@@ -5,7 +5,7 @@ title: Open Source
 
 In my spare time I try contribute to the open source community by adding new features or fixing bugs to existing repositories but also creating my own open source libraries.
 
-## React Native – Core Contributor [2024-Present]
+## React Native – Core Contributor [2024]
 
 I've been a contributor to the React Native project since 2024. I've helped fixing several issues for the core components as well as helping modernising some of the internals with main focus on Android/Kotlin.
 

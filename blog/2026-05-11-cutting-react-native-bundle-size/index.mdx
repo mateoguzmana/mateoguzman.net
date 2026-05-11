@@ -83,7 +83,7 @@ Most React Native apps end up with a few surfaces that shouldn't ship to end use
 Typical code:
 
 ```tsx
-// AppRouter.tsx
+// RootStack.tsx
 {(__DEV__ || IS_QA_TOOLS_ENABLED) && (
   <Stack.Screen name="Storybook" component={Storybook} />
 )}
@@ -92,7 +92,7 @@ Typical code:
 Two values, two completely different behaviours:
 
 - `__DEV__` is a Babel-time constant. Metro replaces it with `true` or `false` during transform, so the branch really does drop out of release bundles.
-- `IS_QA_TOOLS_ENABLED` comes from `react-native-config`, which reads `.env` at runtime through the native side. Metro can't statically resolve it at bundle time, so the conditional looks dynamic to the bundler, the branch stays reachable, and the `import { Storybook }` at the top of `AppRouter.tsx` is a live edge in the module graph.
+- `IS_QA_TOOLS_ENABLED` comes from `react-native-config`, which reads `.env` at runtime through the native side. Metro can't statically resolve it at bundle time, so the conditional looks dynamic to the bundler, the branch stays reachable, and the `import { Storybook }` at the top of `RootStack.tsx` is a live edge in the module graph.
 
 That live edge is enough to keep Storybook and everything it transitively pulls in (`@storybook/react-native`, the Storybook runtime, every `*.stories.*`) in the production bundle. About 1.8 MB of compressed JS behind a flag that's never going to be true in prod.
 
@@ -189,11 +189,11 @@ The second-largest cut on this app didn't come from removing anything I wrote. I
     <text x="20" y="16" fill="currentColor" fontSize="12" fontWeight="600">Before · two co-resolved versions</text>
     <rect x="20" y="26" width="260" height="200" rx="6" fill="none" stroke="currentColor" strokeWidth="1.5"/>
     <rect x="30" y="50" width="115" height="160" fill="rgba(239,68,68,0.18)" stroke="rgba(239,68,68,0.85)" strokeWidth="1.2"/>
-    <text x="40" y="72" fill="currentColor" fontSize="11" fontWeight="600">@wallet-provider/*</text>
+    <text x="40" y="72" fill="currentColor" fontSize="11" fontWeight="600">@some-sdk/*</text>
     <text x="40" y="88" fill="currentColor" fontSize="10" opacity="0.7">v2.17.x</text>
     <text x="40" y="200" fill="currentColor" fontSize="10" opacity="0.7">≈ same code</text>
     <rect x="149" y="50" width="121" height="160" fill="rgba(239,68,68,0.18)" stroke="rgba(239,68,68,0.85)" strokeWidth="1.2"/>
-    <text x="159" y="72" fill="currentColor" fontSize="11" fontWeight="600">@wallet-provider/*</text>
+    <text x="159" y="72" fill="currentColor" fontSize="11" fontWeight="600">@some-sdk/*</text>
     <text x="159" y="88" fill="currentColor" fontSize="10" opacity="0.7">v2.21.x</text>
     <text x="159" y="200" fill="currentColor" fontSize="10" opacity="0.7">≈ same code</text>
     <line x1="295" y1="126" x2="345" y2="126" stroke="currentColor" strokeWidth="1.5"/>
@@ -201,7 +201,7 @@ The second-largest cut on this app didn't come from removing anything I wrote. I
     <text x="360" y="16" fill="currentColor" fontSize="12" fontWeight="600">After · one version, pinned</text>
     <rect x="360" y="26" width="200" height="200" rx="6" fill="none" stroke="currentColor" strokeWidth="1.5"/>
     <rect x="370" y="50" width="180" height="160" fill="rgba(34,197,94,0.18)" stroke="rgba(34,197,94,0.85)" strokeWidth="1.2"/>
-    <text x="380" y="72" fill="currentColor" fontSize="11" fontWeight="600">@wallet-provider/*</text>
+    <text x="380" y="72" fill="currentColor" fontSize="11" fontWeight="600">@some-sdk/*</text>
     <text x="380" y="88" fill="currentColor" fontSize="10" opacity="0.7">v2.23.9 (resolutions)</text>
     <text x="380" y="200" fill="currentColor" fontSize="10" opacity="0.7">−2.34 MB · −6.88%</text>
   </svg>
@@ -210,12 +210,12 @@ The second-largest cut on this app didn't come from removing anything I wrote. I
 
 ### The smell: a treemap with too many of the same thing
 
-On the treemap, one external SDK family was the obvious shape: `@wallet-provider/utils`, `@wallet-provider/core`, `@wallet-provider/sign-client`, `@wallet-provider/types`, `@wallet-provider/universal-provider` all showed up *twice each*, at two slightly different version numbers, with near-identical sizes. Same story for a chain SDK (`@some-chain/web3-sdk`). A `yarn why` confirmed it:
+On the treemap, one external SDK family was the obvious shape: a handful of scoped sub-packages (`@some-sdk/core`, `@some-sdk/client`, `@some-sdk/utils`, plus a couple more) all showed up *twice each*, at two slightly different version numbers, with near-identical sizes. A second SDK family (`@another-sdk/runtime`) had the same pattern. A `yarn why` confirmed it:
 
 ```sh
-$ yarn why @wallet-provider/utils
-# → @wallet-provider/utils@npm:2.21.x   (hoisted, used directly)
-# → @wallet-provider/utils@npm:2.17.x   (pulled in by another upstream SDK)
+$ yarn why @some-sdk/utils
+# → @some-sdk/utils@npm:2.21.x   (hoisted, used directly)
+# → @some-sdk/utils@npm:2.17.x   (pulled in by another upstream SDK)
 ```
 
 Two different transitive consumers were each pinning a slightly different minor of the same family of packages. Yarn played it safe and co-resolved both versions. Metro followed the import edges and packaged both copies of every shared file. Hermes parsed both copies on cold start. None of the runtime ever simultaneously needs both — they're the same code, just at different patch versions.
@@ -229,12 +229,12 @@ Yarn's `resolutions` field forces every transitive consumer in the workspace to 
 ```json
 // package.json
 "resolutions": {
-  "@some-chain/web3-sdk": "1.98.4",
-  "@wallet-provider/core": "2.23.9",
-  "@wallet-provider/sign-client": "2.23.9",
-  "@wallet-provider/types": "2.23.9",
-  "@wallet-provider/universal-provider": "2.23.9",
-  "@wallet-provider/utils": "2.23.9"
+  "@another-sdk/runtime": "1.98.4",
+  "@some-sdk/client": "2.23.9",
+  "@some-sdk/core": "2.23.9",
+  "@some-sdk/runtime": "2.23.9",
+  "@some-sdk/types": "2.23.9",
+  "@some-sdk/utils": "2.23.9"
 }
 ```
 
@@ -252,7 +252,7 @@ After `yarn install`, every transitive import of those packages resolves to exac
 
 It's not a substitute for upgrading. If two consumers genuinely depend on incompatible *major* versions, forcing them onto one will break one of them at runtime. The only way to know is to smoke-test every pinned package through the real code path that uses it.
 
-That smoke test isn't optional. I picked the most-trafficked screen for each pinned package family — the actual wallet-provider flow for the `@wallet-provider/*` packages, the actual chain transaction path for `@some-chain/web3-sdk` — and ran the full happy path through QA on both platforms before merging. Pin alone, no smoke, no merge.
+That smoke test isn't optional. I picked the most-trafficked screen each pinned family actually powers and ran the full happy path through QA on both platforms before merging. Pin alone, no smoke, no merge.
 
 ### Trade-offs
 
