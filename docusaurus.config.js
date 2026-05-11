@@ -1,8 +1,7 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
-const lightCodeTheme = require("prism-react-renderer/themes/github");
-const darkCodeTheme = require("prism-react-renderer/themes/dracula");
+const { themes: prismThemes } = require("prism-react-renderer");
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -12,8 +11,12 @@ const config = {
   url: "https://mateoguzman.net",
   baseUrl: "/",
   onBrokenLinks: "throw",
-  onBrokenMarkdownLinks: "warn",
   favicon: "img/favicon.ico",
+  markdown: {
+    hooks: {
+      onBrokenMarkdownLinks: "warn",
+    },
+  },
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
@@ -122,8 +125,8 @@ const config = {
         copyright: `Copyright © ${new Date().getFullYear()} Mateo Guzmán. Built with Docusaurus.`,
       },
       prism: {
-        theme: lightCodeTheme,
-        darkTheme: darkCodeTheme,
+        theme: prismThemes.github,
+        darkTheme: prismThemes.dracula,
       },
       colorMode: {
         defaultMode: "dark",

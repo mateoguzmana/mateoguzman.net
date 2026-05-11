@@ -136,7 +136,7 @@ const majorCountries = [
 
 type Filter = "all" | "visited" | "future";
 
-export default function TravelMap(): JSX.Element {
+export default function TravelMap(): React.JSX.Element {
   const [error, setError] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [tooltipContent, setTooltipContent] = useState("");

@@ -468,7 +468,7 @@ webviewRef.current?.postMessage(
 );
 ```
 
-One subtle thing that bit me before it stopped biting me: the WebView needs to fully remount when the theme changes, not just receive a new `LOAD_CONFIG`. Otherwise the chart library renders some styles before `LOAD_CONFIG` arrives, and you end up with a half-themed first paint. Keying the element on `mode` (`key={`chart-webview-${mode}`}`) is the cheapest way to force the remount. React unmounts the old WebView, the new one starts fresh, and the very first paint reads the right theme.
+One subtle thing that bit me before it stopped biting me: the WebView needs to fully remount when the theme changes, not just receive a new `LOAD_CONFIG`. Otherwise the chart library renders some styles before `LOAD_CONFIG` arrives, and you end up with a half-themed first paint. Giving the WebView a `key` that includes the current theme mode is the cheapest way to force the remount. React unmounts the old WebView, the new one starts fresh, and the very first paint reads the right theme.
 
 After deleting the second `webViewCreateRoot()` call and removing the dark/light branch in the presenter, the JS bundle dropped by **−427 KB** in a single PR. No new pipeline, no native changes — just one of the two HTML strings stopped being generated.
 
